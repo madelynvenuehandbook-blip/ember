@@ -49,7 +49,7 @@ header{display:flex;align-items:center;gap:12px;padding:6px 2px 14px}
 @keyframes flick{0%{transform:translateX(-50%) scaleY(1)}50%{transform:translateX(-52%) scaleY(1.08) skewX(-3deg)}100%{transform:translateX(-48%) scaleY(.97) skewX(3deg)}}
 .brand{font-family:var(--temple);letter-spacing:.26em;font-size:21.2px;color:var(--candle);font-weight:600}
 .hd-r{margin-left:auto;text-align:right}
-.hd-date{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--moonlight)}
+.hd-date{font-family:var(--sans);font-size:22px;color:var(--moonlight)}
 .hd-phase{font-family:var(--temple);letter-spacing:.1em;font-size:17px;text-transform:uppercase;margin-top:2px}
 
 /* tabs */
@@ -68,7 +68,7 @@ nav.tabs button.on .ic{filter:none;transform:translateY(-1px)}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .card{border:1px solid var(--line);border-radius:18px;background:rgba(20,22,48,.42);backdrop-filter:blur(6px);padding:20px 20px;margin-bottom:16px}
 .card h3{font-family:var(--temple);letter-spacing:.06em;color:var(--moon);font-size:28.3px;margin-bottom:4px;font-weight:600}
-.sub{font-family:var(--serif);font-style:italic;color:var(--moonlight);font-size:23.4px;margin-bottom:13px}
+.sub{font-family:var(--sans);color:var(--moonlight);font-size:23.4px;margin-bottom:13px}
 .eyebrow{font-family:var(--temple);letter-spacing:.24em;text-transform:uppercase;font-size:17.8px;color:var(--candle);opacity:.85;margin-bottom:7px}
 .pagetitle{font-family:var(--temple);font-weight:700;letter-spacing:.1em;font-size:48.1px;margin:2px 0 6px;
   background:linear-gradient(180deg,var(--moon),var(--candle));-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -123,7 +123,7 @@ label.fl{font-size:18.4px;letter-spacing:.1em;text-transform:uppercase;color:var
 .chk.done .ct{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(165,159,182,.5)}
 .ct{font-size:24.1px;color:var(--cream);line-height:1.45}
 .ct .when{font-size:17.8px;letter-spacing:.12em;text-transform:uppercase;color:var(--candle);display:block;margin-bottom:4px}
-.ct .nt{font-size:20.5px;color:var(--muted);display:block;margin-top:5px;font-style:italic;font-family:var(--serif);line-height:1.5}
+.ct .nt{font-size:20.5px;color:var(--moonlight);display:block;margin-top:5px;font-family:var(--sans);line-height:1.5}
 .tag{display:inline-block;font-size:15.6px;letter-spacing:.08em;text-transform:uppercase;border-radius:20px;padding:3px 9px;margin-left:7px;vertical-align:middle}
 .tag.phase{background:rgba(232,185,106,.16);color:var(--candle)}
 .tag.hist{background:rgba(155,92,110,.22);color:#E59DAE}
@@ -151,12 +151,12 @@ label.fl{font-size:18.4px;letter-spacing:.1em;text-transform:uppercase;color:var
 
 /* sync */
 .synccard{border:1px solid rgba(232,185,106,.35);background:linear-gradient(135deg,rgba(224,116,60,.1),rgba(232,185,106,.05))}
-.note{font-size:20.5px;color:var(--muted);font-style:italic;font-family:var(--serif);margin-top:8px;line-height:1.55}
+.note{font-size:20.5px;color:var(--moonlight);font-family:var(--sans);margin-top:8px;line-height:1.55}
 .flash{position:fixed;left:50%;bottom:calc(var(--tabh) + 18px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
   background:rgba(8,11,30,.94);border:1px solid var(--candle);color:var(--candle);padding:13px 22px;border-radius:30px;font-size:20.5px;
   z-index:90;opacity:0;transition:.3s;pointer-events:none}
 .flash.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.getbetter{font-size:20.5px;color:var(--green);font-family:var(--serif);font-style:italic;text-align:center;margin:4px 0 12px;line-height:1.45}
+.getbetter{font-size:20.5px;color:var(--green);font-family:var(--sans);text-align:center;margin:4px 0 12px;line-height:1.45}
 hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 </style>
 </head>
