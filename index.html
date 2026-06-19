@@ -156,7 +156,7 @@ label.fl{font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var
   background:rgba(8,11,30,.94);border:1px solid var(--candle);color:var(--candle);padding:13px 22px;border-radius:30px;font-size:13.9px;
   z-index:90;opacity:0;transition:.3s;pointer-events:none}
 .flash.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.getbetter{font-size:13.9px;color:var(--green);font-family:var(--sans);text-align:center;margin:4px 0 12px;line-height:1.45}
+.getbetter{font-size:13.9px;color:var(--candle);font-family:var(--sans);text-align:center;margin:4px 0 12px;line-height:1.45}
 hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 </style>
 </head>
@@ -469,6 +469,26 @@ var QUESTIONS=[
  'What did you do today that mattered but produced nothing? Why did it matter?'
 ];
 function todaysQ(){var d=new Date();return QUESTIONS[d.getDate()%QUESTIONS.length];}
+var QUOTES=[
+ 'You show up for your future self while being kind to your current self. That is the whole assignment.',
+ 'Rest is the strategy, not the failure.',
+ 'The ease is the proof, not the trick.',
+ 'You move by doing less, and get further.',
+ 'Give yourself the credit. Bank the win.',
+ 'Your body sets the pace. Your work flexes around it.',
+ 'Walk Whiskey. Feed yourself. Be with your people. That counts.',
+ 'You decide without needing permission.',
+ 'Build the long table, not the high ladder.',
+ 'You are not behind. You are building from a stronger foundation.',
+ 'Receive what comes like you earned it. You did.',
+ 'What nourished you today was not stolen from your work. It is the soil it grows from.',
+ 'The fire only needs tending, not proving.',
+ 'Enough is a real number, and you have probably already passed it.',
+ 'Your becoming is happening on the quiet days too.',
+ 'Tend the small thing today. That is how the big thing gets built.',
+ 'Be kind to her. She is doing more than anyone sees.'
+];
+function todaysQuote(){var di=Math.floor(new Date().setHours(0,0,0,0)/86400000);return QUOTES[((di%QUOTES.length)+QUOTES.length)%QUOTES.length];}
 
 var RITES=[
  {id:'sleep',t:'Guarded my sleep'},{id:'body',t:'Moved / tended my body'},
@@ -651,7 +671,7 @@ function renderHeader(){
 
 function renderToday(){
   var ci=cycleInfo(),tg=targets(),tot=macroTotals(),w=todayWater(),wg=waterGoal();
-  document.getElementById('betterLine').textContent='Your resting HR fell ~93 → ~80. Your body is doing the work while you build the life.';
+  document.getElementById('betterLine').textContent=todaysQuote();
   document.getElementById('todayWaterRing').innerHTML=ring(w.ml/wg,(w.ml/1000).toFixed(1)+'L','water',(wg/1000).toFixed(1)+'L goal','#5FA8D3',132);
   document.getElementById('todayProteinRing').innerHTML=ring(tot.p/tg.p,Math.round(tot.p),'protein',tg.p+'g goal','#4FB68C',132);
   document.getElementById('todayMacroMini').innerHTML=
