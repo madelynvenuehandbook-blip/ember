@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="The Ember">
+<meta name="theme-color" content="#080B1E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23080B1E'/%3E%3Cpath d='M90 38c14 22-8 30 4 50 8-13 2-22 14-28-3 24 22 28 22 52a40 40 0 1 1-80 0c0-20 14-30 22-46 6 12 0 22 6 34 8-14-6-24 12-62z' fill='%23F4A24C'/%3E%3C/svg%3E">
+<title>The Ember</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#080B1E; --night:#10163A; --dusk:#241D45; --plum:#3A2A4D;
+  --ember:#E0743C; --flame:#F4A24C; --candle:#E8B96A;
+  --moon:#ECE9F4; --moonlight:#C4CBE6; --cream:#F3EBDD; --muted:#A59FB6;
+  --green:#4FB68C; --rose:#9B5C6E; --water:#5FA8D3;
+  --line:rgba(196,203,230,.14);
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --temple:'Cinzel',serif;
+  --sans:'Jost',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --tabh:72px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--sans);color:var(--cream);font-size:17px;line-height:1.55;
+  background:linear-gradient(180deg,#05060F 0%,var(--void) 16%,var(--night) 42%,var(--dusk) 70%,#2A1B1A 90%,#170F0A 100%);
+  background-attachment:fixed;min-height:100vh;
+  padding-bottom:calc(var(--tabh) + env(safe-area-inset-bottom));
+  overflow-x:hidden;-webkit-user-select:none;user-select:none;
+}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+.star{position:absolute;background:#fff;border-radius:50%;animation:tw linear infinite}
+@keyframes tw{0%,100%{opacity:.12}50%{opacity:.85}}
+.wrap{position:relative;z-index:2;max-width:560px;margin:0 auto;padding:0 18px;
+  padding-top:calc(14px + env(safe-area-inset-top))}
+
+/* header */
+header{display:flex;align-items:center;gap:12px;padding:6px 2px 14px}
+.flame-mini{position:relative;width:30px;height:40px;flex:0 0 30px}
+.fm{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:18px;height:30px;border-radius:50% 50% 38% 38%;
+  background:radial-gradient(circle at 50% 75%,#fff 4%,var(--candle) 20%,var(--flame) 46%,var(--ember) 70%,rgba(224,116,60,0) 82%);
+  filter:blur(.6px);transform-origin:50% 90%;animation:flick 2.4s ease-in-out infinite alternate;mix-blend-mode:screen}
+@keyframes flick{0%{transform:translateX(-50%) scaleY(1)}50%{transform:translateX(-52%) scaleY(1.08) skewX(-3deg)}100%{transform:translateX(-48%) scaleY(.97) skewX(3deg)}}
+.brand{font-family:var(--temple);letter-spacing:.26em;font-size:15px;color:var(--candle);font-weight:600}
+.hd-r{margin-left:auto;text-align:right}
+.hd-date{font-family:var(--serif);font-style:italic;font-size:15.5px;color:var(--moonlight)}
+.hd-phase{font-family:var(--temple);letter-spacing:.1em;font-size:12px;text-transform:uppercase;margin-top:2px}
+
+/* tabs */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:space-around;
+  background:linear-gradient(180deg,rgba(8,11,30,.6),rgba(8,11,30,.96));backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);padding:8px 4px calc(8px + env(safe-area-inset-bottom));height:calc(var(--tabh) + env(safe-area-inset-bottom))}
+nav.tabs button{background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:12px;letter-spacing:.05em;
+  text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;cursor:pointer;transition:color .2s;padding:0}
+nav.tabs button .ic{font-size:23px;line-height:1;filter:grayscale(.4) opacity(.7);transition:.2s}
+nav.tabs button.on{color:var(--candle)}
+nav.tabs button.on .ic{filter:none;transform:translateY(-1px)}
+
+/* generic */
+.page{display:none;animation:fade .25s ease}
+.page.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{border:1px solid var(--line);border-radius:18px;background:rgba(20,22,48,.42);backdrop-filter:blur(6px);padding:20px 20px;margin-bottom:16px}
+.card h3{font-family:var(--temple);letter-spacing:.06em;color:var(--moon);font-size:20px;margin-bottom:4px;font-weight:600}
+.sub{font-family:var(--serif);font-style:italic;color:var(--moonlight);font-size:16.5px;margin-bottom:13px}
+.eyebrow{font-family:var(--temple);letter-spacing:.24em;text-transform:uppercase;font-size:12.5px;color:var(--candle);opacity:.85;margin-bottom:7px}
+.pagetitle{font-family:var(--temple);font-weight:700;letter-spacing:.1em;font-size:34px;margin:2px 0 6px;
+  background:linear-gradient(180deg,var(--moon),var(--candle));-webkit-background-clip:text;background-clip:text;color:transparent}
+.muted{color:var(--muted)}.tiny{font-size:14px}
+button.act{font-family:var(--sans);letter-spacing:.06em;border:1px solid var(--candle);background:rgba(232,185,106,.1);color:var(--candle);
+  border-radius:30px;padding:14px 22px;font-size:16px;cursor:pointer;transition:.2s}
+button.act:active{transform:scale(.96);background:rgba(232,185,106,.22)}
+button.ghost{border:1px solid var(--line);background:rgba(236,233,244,.04);color:var(--cream);border-radius:30px;padding:12px 17px;font-size:15px;cursor:pointer}
+button.ghost:active{transform:scale(.96)}
+input,textarea,select{font-family:var(--sans);background:rgba(8,11,30,.5);border:1px solid var(--line);border-radius:12px;
+  color:var(--cream);padding:13px 14px;font-size:16.5px;width:100%;-webkit-user-select:text;user-select:text}
+input:focus,textarea:focus{outline:none;border-color:var(--candle)}
+.row2{display:flex;gap:10px;flex-wrap:wrap}
+label.fl{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+
+/* ring */
+.ring-wrap{display:flex;justify-content:center;margin:6px 0 4px;position:relative}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;pointer-events:none}
+.ring-center .big{font-family:var(--temple);font-size:38px;color:var(--moon);line-height:1}
+.ring-center .lab{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.ring-center .goal{font-family:var(--serif);font-size:15.5px;color:var(--moonlight);margin-top:3px}
+
+/* macro bars */
+.mbar{margin:11px 0}
+.mbar .t{display:flex;justify-content:space-between;font-size:15px;margin-bottom:6px}
+.mbar .t b{color:var(--moon);font-weight:500}
+.mbar .track{height:9px;border-radius:6px;background:rgba(255,255,255,.07);overflow:hidden}
+.mbar .fill{height:100%;border-radius:6px;transition:width .4s}
+
+/* quick water buttons */
+.wq{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.wq button{flex:1;min-width:84px;border:1px solid var(--line);background:rgba(95,168,211,.08);color:var(--cream);border-radius:14px;
+  padding:16px 8px;font-size:14.5px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:4px;align-items:center}
+.wq button:active{transform:scale(.95);background:rgba(95,168,211,.22)}
+.wq button .v{font-family:var(--temple);font-size:20px;color:var(--water)}
+
+/* list rows */
+.logrow{display:flex;align-items:flex-start;gap:10px;padding:13px 0;border-top:1px solid var(--line);font-size:16px}
+.logrow:first-child{border-top:none}
+.logrow .x{margin-left:auto;color:var(--muted);font-size:22px;cursor:pointer;padding:0 6px;line-height:1}
+.logrow .macros{font-size:14px;color:var(--muted);letter-spacing:.04em;margin-top:4px}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:20px;padding:12px 17px;margin:0 8px 10px 0;font-size:16px;background:rgba(236,233,244,.04);cursor:pointer;transition:.15s}
+.chip:active{transform:scale(.95);border-color:var(--candle)}
+.chip .cm{font-size:13px;color:var(--muted);display:block;margin-top:3px}
+
+/* checklist */
+.chk{display:flex;align-items:flex-start;gap:13px;padding:15px 2px;border-top:1px solid var(--line);cursor:pointer}
+.chk:first-child{border-top:none}
+.box{flex:0 0 27px;width:27px;height:27px;border-radius:8px;border:1.5px solid var(--muted);margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--earth);transition:.15s}
+.chk.done .box{background:var(--green);border-color:var(--green);color:#06150F}
+.chk.done .ct{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(165,159,182,.5)}
+.ct{font-size:17px;color:var(--cream);line-height:1.45}
+.ct .when{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--candle);display:block;margin-bottom:4px}
+.ct .nt{font-size:14.5px;color:var(--muted);display:block;margin-top:5px;font-style:italic;font-family:var(--serif);line-height:1.5}
+.tag{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;border-radius:20px;padding:3px 9px;margin-left:7px;vertical-align:middle}
+.tag.phase{background:rgba(232,185,106,.16);color:var(--candle)}
+.tag.hist{background:rgba(155,92,110,.22);color:#E59DAE}
+
+/* phase pills */
+.guide{display:grid;gap:10px}
+.gitem{display:flex;gap:12px;padding:15px;border:1px solid var(--line);border-radius:14px;background:rgba(236,233,244,.03)}
+.gitem .gi{font-size:22px;flex:0 0 26px;text-align:center}
+.gitem .gl{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--candle);margin-bottom:4px}
+.gitem .gt{font-size:16.5px;color:var(--cream);line-height:1.5}
+.flag{border-left:2px solid var(--ember);background:rgba(224,116,60,.08)}
+
+/* sliders */
+.slide{margin:14px 0}
+.slide .sl-t{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.slide .sl-t b{color:var(--moon);font-weight:500}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;border:1px solid var(--line);background:rgba(236,233,244,.04);color:var(--muted);border-radius:10px;padding:10px 0;font-size:14px;cursor:pointer;transition:.12s}
+.seg button.sel{background:var(--candle);color:#1a1206;border-color:var(--candle);font-weight:600}
+.toggle{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line);font-size:14px;cursor:pointer}
+.toggle .sw{flex:0 0 46px;width:46px;height:26px;border-radius:20px;background:rgba(255,255,255,.1);position:relative;transition:.2s}
+.toggle .sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:.2s}
+.toggle.on .sw{background:var(--ember)}
+.toggle.on .sw::after{left:23px;background:#fff}
+
+/* sync */
+.synccard{border:1px solid rgba(232,185,106,.35);background:linear-gradient(135deg,rgba(224,116,60,.1),rgba(232,185,106,.05))}
+.note{font-size:14.5px;color:var(--muted);font-style:italic;font-family:var(--serif);margin-top:8px;line-height:1.55}
+.flash{position:fixed;left:50%;bottom:calc(var(--tabh) + 18px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+  background:rgba(8,11,30,.94);border:1px solid var(--candle);color:var(--candle);padding:13px 22px;border-radius:30px;font-size:14.5px;
+  z-index:90;opacity:0;transition:.3s;pointer-events:none}
+.flash.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.getbetter{font-size:14.5px;color:var(--green);font-family:var(--serif);font-style:italic;text-align:center;margin:4px 0 12px;line-height:1.45}
+hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div class="wrap">
+  <header>
+    <div class="flame-mini"><div class="fm"></div></div>
+    <div class="brand">THE EMBER</div>
+    <div class="hd-r">
+      <div class="hd-date" id="hdDate">—</div>
+      <div class="hd-phase" id="hdPhase">—</div>
+    </div>
+  </header>
+
+  <!-- ============ TODAY ============ -->
+  <div class="page on" id="pg-today">
+    <div class="eyebrow">What you carry today</div>
+    <div class="pagetitle">Today</div>
+    <div class="getbetter" id="betterLine"></div>
+
+    <div class="card">
+      <div style="display:flex;gap:16px;align-items:center;justify-content:space-around;flex-wrap:wrap">
+        <div class="ring-wrap" style="margin:0" id="todayWaterRing"></div>
+        <div class="ring-wrap" style="margin:0" id="todayProteinRing"></div>
+      </div>
+      <hr class="d">
+      <div id="todayMacroMini"></div>
+    </div>
+
+    <div class="card" id="todayPhaseCard">
+      <h3 id="tpTitle">—</h3>
+      <div class="sub" id="tpSub"></div>
+      <div id="tpOne"></div>
+    </div>
+
+    <div class="card">
+      <h3>Today's anchors</h3>
+      <div class="sub">The few that matter most right now.</div>
+      <div id="todayAnchors"></div>
+    </div>
+
+    <div class="card" id="patternsCard">
+      <h3>Patterns <span class="muted tiny">· your data, not your story about it</span></h3>
+      <div id="patternsBody"></div>
+    </div>
+
+    <div class="card synccard">
+      <h3>🔥 Carry the Ember home</h3>
+      <div class="note" style="margin-top:2px">Sends everything you've logged to Vesta on your Mac, by AirDrop. Nothing leaves your phone until you tap this, and nothing touches the internet. Do it whenever you're near your Mac.</div>
+      <div style="margin-top:13px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="act" onclick="carryHome()">Carry the Ember home →</button>
+        <button class="ghost" onclick="downloadSync()">Save file instead</button>
+      </div>
+      <div class="note" id="lastSync"></div>
+    </div>
+  </div>
+
+  <!-- ============ WATER ============ -->
+  <div class="page" id="pg-water">
+    <div class="eyebrow">Hold your volume</div>
+    <div class="pagetitle">Water</div>
+    <div class="card">
+      <div class="ring-wrap" id="waterRing"></div>
+      <div class="wq">
+        <button onclick="addWater(250)"><span class="v">+250</span><span>ml · cup</span></button>
+        <button onclick="addWater(500)"><span class="v">+500</span><span>ml · bottle</span></button>
+        <button onclick="addWater(750)"><span class="v">+750</span><span>ml · big</span></button>
+        <button onclick="addCustomWater()"><span class="v">+ ml</span><span>custom</span></button>
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <button class="ghost" onclick="addWater(-250)">undo a cup</button>
+      </div>
+      <div class="note" id="waterWhy"></div>
+    </div>
+    <div class="card">
+      <h3>Electrolytes <span class="muted tiny">· your POTS foundation</span></h3>
+      <div class="sub">Buoy drops, salt, broth. Counted on their own — water alone isn't volume.</div>
+      <div style="display:flex;align-items:center;gap:16px;justify-content:center">
+        <button class="ghost" onclick="addLyte(-1)">–</button>
+        <div style="text-align:center"><div style="font-family:var(--temple);font-size:30px;color:var(--candle)" id="lyteCount">0</div><div class="tiny muted">servings today</div></div>
+        <button class="act" onclick="addLyte(1)">+ one</button>
+      </div>
+      <div class="note" id="lyteWhy"></div>
+    </div>
+  </div>
+
+  <!-- ============ MEALS ============ -->
+  <div class="page" id="pg-meals">
+    <div class="eyebrow">Build the body</div>
+    <div class="pagetitle">Meals</div>
+    <div class="card">
+      <div id="macroRings"></div>
+      <hr class="d">
+      <div id="phaseEat" class="note"></div>
+    </div>
+
+    <div class="card">
+      <h3>Log a meal</h3>
+      <div class="sub">Type what you ate. I'll estimate — then nudge the numbers if they're off.</div>
+      <input id="mealInput" placeholder="2 eggs, GF toast, avocado" autocomplete="off">
+      <div style="margin-top:8px"><button class="act" onclick="parseMeal()">estimate →</button></div>
+      <div id="parseOut"></div>
+    </div>
+
+    <div class="card">
+      <h3>Your favorites</h3>
+      <div class="sub">One tap to log a meal you eat often.</div>
+      <div id="favList"></div>
+      <div style="margin-top:6px"><button class="ghost" onclick="addFavPrompt()">+ save a new favorite</button></div>
+    </div>
+
+    <div class="card">
+      <h3>Today's plate</h3>
+      <div id="mealLog"></div>
+    </div>
+  </div>
+
+  <!-- ============ CYCLE ============ -->
+  <div class="page" id="pg-cycle">
+    <div class="eyebrow">The right time, not the clock</div>
+    <div class="pagetitle">Cycle</div>
+    <div class="card">
+      <div class="ring-wrap" id="cycleRingBox"></div>
+      <div style="text-align:center"><div class="sub" style="margin:0" id="cyclePhaseLine"></div></div>
+    </div>
+
+    <div class="card">
+      <h3>Today, for this phase</h3>
+      <div class="sub" id="guideSub"></div>
+      <div class="guide" id="phaseGuide"></div>
+    </div>
+
+    <div class="card" style="border-style:dashed">
+      <div class="note" style="margin:0">Your phase comes from <b style="color:var(--moonlight)">Visible</b>, which you feed into Vesta each month. The Ember just reflects it here so your food, water, and supplements line up with where your body is. Nothing to track or set on your phone.</div>
+    </div>
+  </div>
+
+  <!-- ============ TEND ============ -->
+  <div class="page" id="pg-tend">
+    <div class="eyebrow">Keep the fire</div>
+    <div class="pagetitle">Tend</div>
+
+    <div class="card">
+      <h3>Today's stack</h3>
+      <div class="sub" id="suppSub">Your real schedule, layered for today's phase.</div>
+      <div id="suppList"></div>
+    </div>
+
+    <div class="card">
+      <h3>This Counts</h3>
+      <div class="sub" id="dailyQ"></div>
+      <textarea id="countText" rows="3" placeholder="Anything that nourished you today. Rest counts."></textarea>
+      <div style="margin-top:8px"><button class="act" onclick="addCount()">log it</button></div>
+      <div id="countList" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h3>Daily rites</h3>
+      <div class="sub">Tick what you tended today. Not a scorecard, a practice.</div>
+      <div id="ritesList"></div>
+    </div>
+  </div>
+
+</div>
+
+<nav class="tabs" id="tabs">
+  <button class="on" data-pg="today"><span class="ic">🔥</span>Today</button>
+  <button data-pg="water"><span class="ic">💧</span>Water</button>
+  <button data-pg="meals"><span class="ic">🍳</span>Meals</button>
+  <button data-pg="cycle"><span class="ic">🌙</span>Cycle</button>
+  <button data-pg="tend"><span class="ic">🕯</span>Tend</button>
+</nav>
+
+<div class="flash" id="flash"></div>
+
+<script>
+/* ============ starfield ============ */
+(function(){var s=document.getElementById('stars'),h='';for(var i=0;i<70;i++){var t=Math.random()*70,l=Math.random()*100,z=Math.random()*1.8+.5,d=Math.random()*4+2,dl=Math.random()*5;h+='<span class="star" style="top:'+t+'%;left:'+l+'%;width:'+z+'px;height:'+z+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></span>';}s.innerHTML=h;})();
+
+/* ============ state ============ */
+var EKEY='ember_v1';
+function todayKey(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function riteKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+var FAV_SEED=[
+  {name:'Tofu lemon ricotta pasta',p:25,c:55,f:18},
+  {name:'Beef + sweet potato chili',p:28,c:35,f:14},
+  {name:'Beef stew (the batch)',p:30,c:20,f:18},
+  {name:'Cod + roasted beets',p:32,c:15,f:3},
+  {name:'Eggs over spinach + GF toast',p:16,c:17,f:12},
+  {name:'Green protein smoothie',p:25,c:30,f:6}
+];
+var defaults={
+  lastPeriodStart:'2026-05-23', cycleLength:29, cycleUpdatedAt:0,
+  hydration:{}, meals:{}, symptoms:{}, supps:{}, counts:[], rites:{},
+  favorites:FAV_SEED.slice(), lastSync:0
+};
+var S=Object.assign({},defaults,JSON.parse(localStorage.getItem(EKEY)||'{}'));
+if(!S.favorites||!S.favorites.length)S.favorites=FAV_SEED.slice();
+function persist(){try{localStorage.setItem(EKEY,JSON.stringify(S));}catch(e){}}
+
+/* ============ cycle ============ */
+var PHASES=[
+ {key:'menstrual',name:'Menstrual',moon:'New Moon',color:'#9B5C6E',start:1,end:5},
+ {key:'follicular',name:'Follicular',moon:'Waxing Moon',color:'#6FA88C',start:6,end:13},
+ {key:'ovulation',name:'Ovulation',moon:'Full Moon',color:'#E8B96A',start:14,end:16},
+ {key:'luteal',name:'Luteal',moon:'Waning Moon',color:'#B98A6A',start:17,end:99}
+];
+function phaseForDay(d){return PHASES.find(function(p){return d>=p.start&&d<=p.end;})||PHASES[3];}
+function cycleInfo(){
+  var len=S.cycleLength||29;
+  var start=new Date(S.lastPeriodStart+'T00:00:00');
+  var today=new Date();today.setHours(0,0,0,0);
+  var diff=Math.floor((today-start)/86400000);
+  var day=((diff%len)+len)%len+1;
+  var ph=phaseForDay(day);
+  var lateLuteal=(ph.key==='luteal' && day>=len-4);
+  return {len:len,day:day,phase:ph,lateLuteal:lateLuteal};
+}
+
+/* phase-specific guidance, built to YOUR body + foods (no gluten, no poultry, fish=cod/tuna, no broccoli) */
+var GUIDE={
+ menstrual:{
+   eat:'Warm + iron-rich. Grass-fed beef, cooked greens, beets, bone broth, GF oats with blackstrap molasses. Batch one warm pot on day 1.',
+   move:'Walks with Whiskey, gentle/yin yoga. Glute bridges & dead bugs in bed if you want movement. No resistance push.',
+   caf:'Skip or strongly reduce — vasoconstrictor, worsens cramps, depletes magnesium. Bone broth, ginger or red raspberry leaf instead.',
+   skin:'Barrier mode. Cleanser + jojoba + SPF only. No actives. Cool chamomile compress on red areas.',
+   supp:'Energy stack matters most (ubiquinol, ALCAR, creatine). Iron-rich foods. Heavy salt + electrolytes for your POTS.',
+   flag:'Your data: this is your worst fatigue + crash window. Rest is the strategy, not the failure.'},
+ follicular:{
+   eat:'Fresh + lighter, carbs work well now (you\'re insulin-sensitive). Lean protein, colorful veg, GF grains. Tofu, eggs, beef, cod.',
+   move:'YOUR push window. Anchor 2–3 short strength sessions here — progress reps. Best HRV + stability of the month.',
+   caf:'Best tolerance window. Full normal caffeine is fine — front-load it, off by 2pm.',
+   skin:'Strongest barrier. Actives work best now — vitamin C confidently, introduce any retinol/AHA here.',
+   supp:'Maintenance dosing. Bank the good days — schedule the bigger tasks + workouts now.',
+   flag:'This is where strength training actually sticks. Front-load it here instead of fighting yourself later.'},
+ ovulation:{
+   eat:'Anti-inflammatory + lighter, hydrate hard. Cruciferous for liver (brussels, cauliflower — skip broccoli). Histamine-aware: favor fresh cod over canned tuna, skip aged cheese, fermented, leftovers, alcohol.',
+   move:'⚠ Gentle ONLY — walking, mobility, light yoga. Your data says this is your LEAST stable window. Resist going hard.',
+   caf:'⚠ Half-caf or matcha. Your resting HR runs high this week — caffeine stacks on top of it.',
+   skin:'Glowing but sebum climbing. Lighter formulas, cold splash midday, SPF non-negotiable.',
+   supp:'HEAVIEST electrolytes/salt/fluids. Quercetin daily, vitamin C 1,000mg, DAO before high-histamine meals.',
+   flag:'⚠ Textbook says HIIT now. YOUR data says opposite: highest resting HR, lowest HRV, lowest stability. Vision, don\'t sprint.'},
+ luteal:{
+   eat:'Complex carbs: sweet potato, squash, GF grains. Magnesium (pumpkin seeds, dark chocolate), more calories. Warm as you near bleeding. Ease caffeine + sugar late.',
+   move:'Early: finish your strength week (2 sessions). Late: taper to walks + yoga.',
+   caf:'Early luteal: full + food. Mid: half-caf. Late: off or matcha. Protects blood sugar + magnesium.',
+   skin:'Sebum climbing → niacinamide. LATE luteal: histamine rising, strip to barrier basics, no actives the last 3–4 days (the cheek-flare window).',
+   supp:'Magnesium (evening, already). Omega-3. Begin/continue quercetin as you approach your period. Steady pacing.',
+   flag:'Late luteal + menstrual can worsen POTS. Prioritize salt, fluids, rest. Don\'t stack demanding upright days.'}
+};
+
+/* ============ macros — your targets, phase-shifted ============ */
+var MACRO_BASE={kcal:2250,p:140,c:275,f:65};
+var MACRO_PHASE={
+ menstrual:{kcal:2100,p:140,c:250,f:65,note:'Iron-forward + warm. Slightly lower energy need on your worst-fatigue days — eat to comfort, not to a number.'},
+ follicular:{kcal:2300,p:140,c:295,f:62,note:'Carbs up — you use them best now. This is your build + push window; fuel the strength work.'},
+ ovulation:{kcal:2180,p:140,c:250,f:68,note:'Lighter + anti-inflammatory, histamine-aware. Protein stays high; hydrate hard.'},
+ luteal:{kcal:2380,p:145,c:285,f:70,note:'+130 cal, complex carbs, more magnesium. Your body genuinely needs more here — give it.'}
+};
+function targets(){var ph=cycleInfo().phase.key;return MACRO_PHASE[ph]||MACRO_BASE;}
+
+/* ============ water goal ============ */
+function waterGoal(){
+  var ci=cycleInfo();var g=2750; // ml baseline toward 2.5–3L POTS target
+  if(ci.phase.key==='ovulation')g=3200;
+  else if(ci.phase.key==='menstrual')g=3000;
+  return g;
+}
+
+/* ============ supplement schedule (your real stack) ============ */
+function suppSchedule(){
+  var ci=cycleInfo();var ph=ci.phase.key;
+  var base=[
+   {id:'unithroid',when:'On waking',name:'Unithroid 100mcg',nt:'Empty stomach, plain water. Wait 30–60 min before food, coffee, electrolytes or any other supplement.'},
+   {id:'buoy_am',when:'On waking',name:'Buoy drops + lemon-turmeric shot',nt:'Fine on waking. If Buoy has magnesium, push 30+ min after Unithroid.'},
+   {id:'d3',when:'Breakfast',name:'Vitamin D3 + K2',nt:'With the fattiest meal — fat-soluble.'},
+   {id:'omega_am',when:'Breakfast',name:'Omega-3 (Carlson) — dose 1',nt:'With food.'},
+   {id:'creatine',when:'Breakfast',name:'Creatine 5g',nt:'Consistency > timing. Your muscle-build anchor.'},
+   {id:'peptides',when:'Mid-morning',name:'KPV + BPC-157 (sublingual)',nt:'Empty, hold under tongue. Gut + mast-cell layer.'},
+   {id:'omega_pm',when:'Lunch',name:'Omega-3 (Carlson) — dose 2',nt:'With food.'},
+   {id:'selenium',when:'Lunch',name:'Selenium 200mcg (or 2–3 Brazil nuts)',nt:'The TPO-antibody lever. Don\'t exceed 400mcg/day total.'},
+   {id:'nac',when:'After lunch',name:'NAC 600–1,200mg',nt:'Glutathione + thyroid + histamine support.'},
+   {id:'coq10',when:'After lunch',name:'Ubiquinol (CoQ10) 200–300mg',nt:'With fat. Energy + mito.'},
+   {id:'alcar',when:'Afternoon',name:'Acetyl-L-carnitine 500–1,000mg',nt:'For the brain fog.'},
+   {id:'mag',when:'Evening',name:'Magnesium malate 400mg',nt:'With food. Evening — it blocks Unithroid in the morning.'},
+   {id:'glutamine',when:'Bedtime',name:'L-glutamine 2g',nt:'Empty. Gut-barrier repair.'}
+  ];
+  // cycle-timed additions
+  if(ph==='ovulation'){
+    base.push({id:'querc_ov',when:'Afternoon',name:'Quercetin',nt:'Daily through ovulation.',phase:true});
+    base.push({id:'vitc_ov',when:'Afternoon',name:'Vitamin C 1,000mg',nt:'Histamine support at your estrogen peak.',phase:true});
+    base.push({id:'dao_ov',when:'Before meals',name:'DAO',nt:'Before any high-histamine meal this week.',phase:true,hist:true});
+  } else if(ph==='luteal' && ci.day>=ci.len-6){
+    base.push({id:'querc_lut',when:'Afternoon',name:'Quercetin',nt:'Begin/continue as you approach your period (the cheek-flare window).',phase:true});
+  } else if(ph==='menstrual'){
+    base.push({id:'iron_food',when:'Meals',name:'Iron-rich foods / bone broth',nt:'You lose iron with the bleed — beef, cooked greens, broth.',phase:true});
+  }
+  return base;
+}
+
+/* ============ daily questions ============ */
+var QUESTIONS=[
+ 'What did your body ask for today, and did you listen?',
+ 'What did you create today: a meal, a thought, a moment, a mess?',
+ 'What did you say no to today that protected you?',
+ 'Whose definition of productive were you using today, yours or someone else\'s?',
+ 'What counts as enough for today? Did you already pass it?',
+ 'What is one thing you are proud of today, even if no one would call it productive?',
+ 'What did you do today that mattered but produced nothing? Why did it matter?'
+];
+function todaysQ(){var d=new Date();return QUESTIONS[d.getDate()%QUESTIONS.length];}
+
+var RITES=[
+ {id:'sleep',t:'Guarded my sleep'},{id:'body',t:'Moved / tended my body'},
+ {id:'create',t:'Made something'},{id:'needle',t:'Moved a needle-mover'},
+ {id:'learn',t:'Read or learned'},{id:'intention',t:'Set my intentions'},
+ {id:'tend',t:'Tended a relationship'},{id:'mindset',t:'Caught the old voice'},
+ {id:'ease',t:'Let something be easy'}
+];
+
+/* ============ food database (gluten-free, no poultry, fish = cod/tuna, no broccoli) ============ */
+/* macros per the portion named. kcal computed. */
+var FOODS=[
+ {n:'egg',a:['eggs'],unit:'each',p:6,c:.6,f:5},
+ {n:'beef stew',a:['stew'],unit:'bowl',p:30,c:20,f:18},
+ {n:'ground beef',a:['beef','hamburger'],unit:'4oz',p:21,c:0,f:15},
+ {n:'steak',a:['sirloin'],unit:'4oz',p:28,c:0,f:10},
+ {n:'cod',a:['white fish'],unit:'5oz',p:30,c:0,f:1,hist:'low'},
+ {n:'tuna',a:['ahi'],unit:'5oz',p:33,c:0,f:6,hist:'high'},
+ {n:'tofu',a:[],unit:'half block',p:15,c:4,f:9},
+ {n:'ricotta',a:[],unit:'half cup',p:14,c:4,f:10,hist:'med'},
+ {n:'greek yogurt',a:['yogurt'],unit:'3/4 cup',p:17,c:7,f:4},
+ {n:'cottage cheese',a:[],unit:'half cup',p:12,c:4,f:5},
+ {n:'pork',a:['pork chop'],unit:'4oz',p:26,c:0,f:12},
+ {n:'bacon',a:[],unit:'2 slices',p:6,c:0,f:7,hist:'high'},
+ {n:'lentils',a:['lentil'],unit:'cup',p:18,c:40,f:1},
+ {n:'black beans',a:['beans'],unit:'cup',p:15,c:41,f:1},
+ {n:'protein powder',a:['protein shake','protein'],unit:'scoop',p:24,c:3,f:2},
+ {n:'pumpkin seeds',a:['pepitas'],unit:'oz',p:9,c:3,f:14},
+ {n:'hemp seeds',a:['hemp'],unit:'3 tbsp',p:10,c:3,f:14},
+ {n:'edamame',a:[],unit:'cup',p:18,c:14,f:8},
+ {n:'gf oats',a:['oats','oatmeal','porridge'],unit:'half cup dry',p:5,c:27,f:3},
+ {n:'quinoa',a:[],unit:'cup',p:8,c:39,f:4},
+ {n:'rice',a:['white rice','brown rice'],unit:'cup',p:4,c:45,f:0},
+ {n:'gf pasta',a:['pasta','noodles'],unit:'cup',p:4,c:44,f:1},
+ {n:'gf toast',a:['toast','gf bread','bread'],unit:'slice',p:2,c:15,f:1},
+ {n:'sweet potato',a:['yam'],unit:'medium',p:2,c:26,f:0},
+ {n:'squash',a:['butternut'],unit:'cup',p:2,c:22,f:0},
+ {n:'potato',a:['potatoes'],unit:'medium',p:4,c:37,f:0},
+ {n:'banana',a:[],unit:'each',p:1,c:27,f:0},
+ {n:'dates',a:['date'],unit:'3',p:1,c:54,f:0},
+ {n:'spinach',a:['greens','leafy greens','kale'],unit:'cup cooked',p:5,c:7,f:1},
+ {n:'beets',a:['beet'],unit:'cup',p:2,c:13,f:0},
+ {n:'brussels sprouts',a:['brussels'],unit:'cup',p:3,c:11,f:0},
+ {n:'cauliflower',a:[],unit:'cup',p:2,c:5,f:0},
+ {n:'salad',a:['mixed greens'],unit:'big bowl',p:3,c:10,f:1},
+ {n:'avocado',a:[],unit:'half',p:1,c:6,f:10},
+ {n:'guacamole',a:['guac'],unit:'1/4 cup',p:1,c:5,f:8},
+ {n:'sauerkraut',a:['kraut'],unit:'1/4 cup',p:0,c:1,f:0,hist:'high'},
+ {n:'kimchi',a:[],unit:'1/4 cup',p:1,c:2,f:0,hist:'high'},
+ {n:'hummus',a:[],unit:'1/4 cup',p:5,c:12,f:10},
+ {n:'olive oil',a:['oil'],unit:'tbsp',p:0,c:0,f:14},
+ {n:'almond butter',a:['nut butter','peanut butter'],unit:'tbsp',p:3,c:3,f:9},
+ {n:'almonds',a:['nuts'],unit:'oz',p:6,c:6,f:14},
+ {n:'dark chocolate',a:['chocolate'],unit:'oz',p:2,c:13,f:9},
+ {n:'cheese',a:['cheddar'],unit:'oz',p:7,c:0,f:9,hist:'high'},
+ {n:'butter',a:[],unit:'tbsp',p:0,c:0,f:11},
+ {n:'smoothie',a:['green smoothie'],unit:'each',p:25,c:30,f:6},
+ {n:'chia pudding',a:['chia'],unit:'each',p:6,c:25,f:10},
+ {n:'bone broth',a:['broth'],unit:'cup',p:9,c:1,f:1},
+ {n:'berries',a:['blueberries','strawberries'],unit:'cup',p:1,c:18,f:0},
+ {n:'apple',a:[],unit:'each',p:0,c:25,f:0}
+];
+var WORDNUM={a:1,an:1,one:1,two:2,three:3,four:4,five:5,half:.5};
+function kcalOf(p,c,f){return Math.round(p*4+c*4+f*9);}
+
+function parseMealText(txt){
+  var parts=txt.toLowerCase().split(/,|\band\b|\+|\bwith\b|&/);
+  var items=[],unknown=[];
+  parts.forEach(function(seg){
+    seg=seg.trim();if(!seg)return;
+    var qty=1;var m=seg.match(/(\d+(?:\.\d+)?)/);
+    if(m){qty=parseFloat(m[1]);}
+    else{for(var w in WORDNUM){if(new RegExp('\\b'+w+'\\b').test(seg)){qty=WORDNUM[w];break;}}}
+    // best food match: longest matching name/alias
+    var best=null,bestLen=0;
+    FOODS.forEach(function(fd){
+      var names=[fd.n].concat(fd.a||[]);
+      names.forEach(function(nm){
+        if(seg.indexOf(nm)>=0 && nm.length>bestLen){best=fd;bestLen=nm.length;}
+      });
+    });
+    if(best){items.push({n:best.n,qty:qty,unit:best.unit,p:best.p*qty,c:best.c*qty,f:best.f*qty,hist:best.hist});}
+    else{unknown.push(seg);}
+  });
+  return {items:items,unknown:unknown};
+}
+
+/* ============ insight layer ============ */
+function lastDays(n){var arr=[],d=new Date();for(var i=0;i<n;i++){var x=new Date(d);x.setDate(d.getDate()-i);arr.push(x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'));}return arr;}
+function dayNumFor(dateStr){var len=S.cycleLength||29,start=new Date(S.lastPeriodStart+'T00:00:00'),d=new Date(dateStr+'T00:00:00');var diff=Math.floor((d-start)/86400000);return ((diff%len)+len)%len+1;}
+function phaseKeyForDate(dateStr){return phaseForDay(dayNumFor(dateStr)).key;}
+function proteinFor(dk){var m=S.meals[dk]||[],p=0;m.forEach(function(x){p+=x.p;});return p;}
+function proteinGoalFor(dk){var ph=(S.meals[dk]&&S.meals[dk][0]&&S.meals[dk][0].phase)||phaseKeyForDate(dk);return (MACRO_PHASE[ph]||MACRO_BASE).p;}
+function waterGoalForPhase(ph){if(ph==='ovulation')return 3200;if(ph==='menstrual')return 3000;return 2750;}
+
+function proteinReport(){
+  var days=lastDays(14),hit=0,logged=0,dots=[];
+  // dots oldest->newest
+  days.slice().reverse().forEach(function(dk){
+    var m=S.meals[dk]||[];
+    if(!m.length){dots.push('blank');return;}
+    logged++;var ok=proteinFor(dk)>=proteinGoalFor(dk);if(ok)hit++;dots.push(ok?'hit':'short');
+  });
+  // streak from most recent logged day backward
+  var streak=0;
+  for(var i=0;i<days.length;i++){var dk=days[i];var m=S.meals[dk]||[];if(!m.length){if(i===0)continue;else break;}if(proteinFor(dk)>=proteinGoalFor(dk))streak++;else break;}
+  return {hit:hit,logged:logged,dots:dots,streak:streak};
+}
+function waterReport(){
+  var days=lastDays(7),sum=0,n=0,hit=0;
+  days.forEach(function(dk){var h=S.hydration[dk];if(h&&h.ml){n++;sum+=h.ml;if(h.ml>=waterGoalForPhase(phaseKeyForDate(dk)))hit++;}});
+  return {avg:n?sum/n:0,n:n,hit:hit};
+}
+function suppReport(){
+  var ANCHORS=['unithroid','creatine','mag'];
+  var days=lastDays(14),logged=0,full=0,dots=[];
+  function anyChecked(s){return s&&Object.keys(s).some(function(k){return s[k];});}
+  days.slice().reverse().forEach(function(dk){
+    var s=S.supps[dk];
+    if(!anyChecked(s)){dots.push('blank');return;}
+    logged++;var ok=ANCHORS.every(function(a){return s[a];});if(ok)full++;dots.push(ok?'hit':'short');
+  });
+  var streak=0;
+  for(var i=0;i<days.length;i++){var s=S.supps[days[i]];if(!anyChecked(s)){if(i===0)continue;else break;}if(ANCHORS.every(function(a){return s[a];}))streak++;else break;}
+  return {logged:logged,full:full,dots:dots,streak:streak};
+}
+function symptomByPhase(){
+  var acc={};
+  Object.keys(S.symptoms||{}).forEach(function(dk){
+    var s=S.symptoms[dk];var ph=s.phase||phaseKeyForDate(dk);
+    if(!acc[ph])acc[ph]={energy:[],stability:[],mood:[],cramps:[],flare:0,n:0};
+    acc[ph].n++;
+    ['energy','stability','mood','cramps'].forEach(function(m){if(typeof s[m]==='number')acc[ph][m].push(s[m]);});
+    if(s.flare)acc[ph].flare++;
+  });
+  function avg(a){return a.length?a.reduce(function(x,y){return x+y;},0)/a.length:null;}
+  var out={};Object.keys(acc).forEach(function(ph){var d=acc[ph];out[ph]={n:d.n,energy:avg(d.energy),stability:avg(d.stability),mood:avg(d.mood),cramps:avg(d.cramps),flare:d.flare};});
+  return out;
+}
+function headlineInsight(sbp){
+  // need ovulation + at least one other phase with n>=2 stability points to make the claim
+  var phasesWithStab=Object.keys(sbp).filter(function(p){return sbp[p].stability!=null && sbp[p].n>=2;});
+  if(sbp.ovulation && sbp.ovulation.stability!=null && sbp.ovulation.n>=2 && phasesWithStab.length>=2){
+    var ov=sbp.ovulation.stability;
+    var others=phasesWithStab.filter(function(p){return p!=='ovulation';});
+    var best=others.reduce(function(a,b){return sbp[b].stability>sbp[a]?b:a;},others[0]);
+    var bn=PHASES.find(function(p){return p.key===best;}).name;
+    if(ov<=sbp[best].stability)return {txt:'Your own logs confirm Kairos: stability runs lowest in ovulation ('+ov.toFixed(1)+'/5) vs '+bn.toLowerCase()+' ('+sbp[best].stability.toFixed(1)+'/5). Your body, not the textbook.',good:true};
+    return {txt:'Interesting — your logged stability in ovulation ('+ov.toFixed(1)+') isn\'t your lowest this time. Keep logging; one cycle isn\'t a pattern yet.',good:false};
+  }
+  return null;
+}
+function totalSymptomDays(){return Object.keys(S.symptoms||{}).length;}
+
+/* ============ rendering ============ */
+function ring(pct,val,lab,goal,color,size){
+  size=size||150;var r=(size/2)-12,cx=size/2,c=2*Math.PI*r;
+  pct=Math.max(0,Math.min(1.15,pct));var off=c*(1-Math.min(1,pct));
+  return '<div class="ring-wrap"><svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
+    '<circle cx="'+cx+'" cy="'+cx+'" r="'+r+'" stroke="rgba(255,255,255,.07)" stroke-width="11" fill="none"/>'+
+    '<circle cx="'+cx+'" cy="'+cx+'" r="'+r+'" stroke="'+color+'" stroke-width="11" fill="none" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'"/>'+
+    '</svg><div class="ring-center"><div class="big">'+val+'</div><div class="lab">'+lab+'</div>'+(goal?'<div class="goal">'+goal+'</div>':'')+'</div></div>';
+}
+function mbar(lab,val,goal,color){
+  var pct=goal?Math.min(1,val/goal):0;
+  return '<div class="mbar"><div class="t"><span>'+lab+'</span><b>'+Math.round(val)+' / '+goal+'</b></div>'+
+    '<div class="track"><div class="fill" style="width:'+(pct*100)+'%;background:'+color+'"></div></div></div>';
+}
+function dayMeals(){return S.meals[todayKey()]||[];}
+function macroTotals(){var t={p:0,c:0,f:0,kcal:0};dayMeals().forEach(function(m){t.p+=m.p;t.c+=m.c;t.f+=m.f;t.kcal+=m.kcal||kcalOf(m.p,m.c,m.f);});return t;}
+function todayWater(){return (S.hydration[todayKey()]||{ml:0,lyte:0});}
+
+function renderHeader(){
+  var ci=cycleInfo();
+  var d=new Date();
+  document.getElementById('hdDate').textContent=d.toLocaleDateString(undefined,{weekday:'short',month:'long',day:'numeric'});
+  var ph=document.getElementById('hdPhase');
+  ph.textContent='Day '+ci.day+' · '+ci.phase.name;ph.style.color=ci.phase.color;
+}
+
+function renderToday(){
+  var ci=cycleInfo(),tg=targets(),tot=macroTotals(),w=todayWater(),wg=waterGoal();
+  document.getElementById('betterLine').textContent='Your resting HR fell ~93 → ~80. Your body is doing the work while you build the life.';
+  document.getElementById('todayWaterRing').innerHTML=ring(w.ml/wg,(w.ml/1000).toFixed(1)+'L','water',(wg/1000).toFixed(1)+'L goal','#5FA8D3',132);
+  document.getElementById('todayProteinRing').innerHTML=ring(tot.p/tg.p,Math.round(tot.p),'protein',tg.p+'g goal','#4FB68C',132);
+  document.getElementById('todayMacroMini').innerHTML=
+    mbar('Calories',tot.kcal,tg.kcal,'linear-gradient(90deg,var(--ember),var(--candle))')+
+    mbar('Carbs',tot.c,tg.c,'#C9A24B')+mbar('Fat',tot.f,tg.f,'#B98A6A');
+  var g=GUIDE[ci.phase.key];
+  document.getElementById('tpTitle').textContent='Day '+ci.day+' · '+ci.phase.name+(ci.lateLuteal?' (late)':'');
+  document.getElementById('tpSub').textContent=ci.phase.moon+' energy';
+  document.getElementById('tpOne').innerHTML='<div class="gitem flag"><div class="gi">✦</div><div><div class="gl">Today\'s truth</div><div class="gt">'+g.flag+'</div></div></div>';
+  // anchors: water gap, protein gap, key supps undone
+  var an=[];
+  if(w.ml<wg)an.push('💧 '+Math.round((wg-w.ml)/250)+' more cups of water to hit your goal'+(ci.phase.key==='ovulation'||ci.phase.key==='menstrual'?' — raised for this phase':''));
+  if(tot.p<tg.p)an.push('🥩 '+Math.round(tg.p-tot.p)+'g protein still to go today');
+  if((w.lyte||0)<2&&(ci.phase.key==='ovulation'||ci.phase.key==='menstrual'))an.push('🧂 load electrolytes heavier today (your high-autonomic phase)');
+  var supDone=S.supps[todayKey()]||{};
+  if(!supDone.unithroid)an.push('💊 Unithroid on an empty stomach');
+  if(!supDone.mag)an.push('🌙 magnesium malate this evening');
+  if(!an.length)an.push('You\'re on top of today. That counts — bank it.');
+  document.getElementById('todayAnchors').innerHTML=an.map(function(x){return '<div class="logrow">'+x+'</div>';}).join('');
+  document.getElementById('lastSync').textContent=S.lastSync?('Last carried home: '+new Date(S.lastSync).toLocaleString()):'Not carried home yet.';
+  renderPatterns();
+}
+
+function renderPatterns(){
+  var host=document.getElementById('patternsBody');if(!host)return;
+  var pr=proteinReport(),wr=waterReport(),sr=suppReport();
+  var h='';
+  var dotHtml=pr.dots.map(function(d){var c=d==='hit'?'var(--green)':d==='short'?'var(--ember)':'rgba(255,255,255,.12)';return '<span style="width:11px;height:11px;border-radius:50%;background:'+c+';display:inline-block;margin:2px"></span>';}).join('');
+  h+='<div><div style="display:flex;justify-content:space-between;font-size:15.5px"><b style="color:var(--moon)">Protein</b><span class="muted">'+(pr.logged?pr.hit+' / '+pr.logged+' logged days hit':'no meals logged yet')+(pr.streak>1?' · 🔥 '+pr.streak+'-day streak':'')+'</span></div><div style="margin-top:6px;line-height:0">'+dotHtml+'</div><div class="tiny muted" style="margin-top:4px">last 14 days · green = hit goal, amber = short, hollow = not logged</div></div>';
+  h+='<hr class="d">';
+  h+='<div style="display:flex;justify-content:space-between;font-size:15.5px"><b style="color:var(--moon)">Water</b><span class="muted">'+(wr.n?'avg '+(wr.avg/1000).toFixed(1)+'L · hit goal '+wr.hit+'/'+wr.n+' days':'no water logged yet')+'</span></div>';
+  h+='<hr class="d">';
+  var sdot=sr.dots.map(function(d){var c=d==='hit'?'var(--green)':d==='short'?'var(--ember)':'rgba(255,255,255,.12)';return '<span style="width:11px;height:11px;border-radius:50%;background:'+c+';display:inline-block;margin:2px"></span>';}).join('');
+  h+='<div><div style="display:flex;justify-content:space-between;font-size:15.5px"><b style="color:var(--moon)">Core stack</b><span class="muted">'+(sr.logged?sr.full+' / '+sr.logged+' full days':'no supplements checked yet')+(sr.streak>1?' · 🔥 '+sr.streak+'-day streak':'')+'</span></div><div style="margin-top:6px;line-height:0">'+sdot+'</div><div class="tiny muted" style="margin-top:4px">Unithroid · creatine · magnesium — your thyroid + muscle + sleep anchors</div></div>';
+  host.innerHTML=h;
+}
+function renderWater(){
+  var w=todayWater(),wg=waterGoal(),ci=cycleInfo();
+  document.getElementById('waterRing').innerHTML=ring(w.ml/wg,(w.ml/1000).toFixed(2)+'L',(Math.round(w.ml/wg*100))+'%',(wg/1000).toFixed(1)+'L goal','#5FA8D3',176);
+  var why='Toward your 2.5–3L POTS target.';
+  if(ci.phase.key==='ovulation')why='Raised to '+(wg/1000).toFixed(1)+'L — ovulation is your highest resting-HR, lowest-stability window. Push fluids + salt hardest now.';
+  else if(ci.phase.key==='menstrual')why='Raised to '+(wg/1000).toFixed(1)+'L — menstrual worsens your POTS. Heavy fluids + electrolytes.';
+  document.getElementById('waterWhy').textContent=why;
+  document.getElementById('lyteCount').textContent=w.lyte||0;
+  document.getElementById('lyteWhy').textContent=(ci.phase.key==='ovulation'||ci.phase.key==='menstrual')?'Load heavier today — this is a high-autonomic phase. Buoy in juice 2–3x, fasting salts on hard days.':'Buoy in juice through the day keeps your volume up.';
+}
+function addWater(ml){var k=todayKey();var w=S.hydration[k]||{ml:0,lyte:0};w.ml=Math.max(0,w.ml+ml);w.goal=waterGoal();S.hydration[k]=w;persist();renderWater();renderToday();}
+function addCustomWater(){var v=prompt('How many ml?');if(v&&!isNaN(v))addWater(parseInt(v,10));}
+function addLyte(n){var k=todayKey();var w=S.hydration[k]||{ml:0,lyte:0};w.lyte=Math.max(0,(w.lyte||0)+n);S.hydration[k]=w;persist();renderWater();renderToday();}
+
+function renderMeals(){
+  var tg=targets(),tot=macroTotals();
+  document.getElementById('macroRings').innerHTML=
+    mbar('Protein · your priority',tot.p,tg.p,'var(--green)')+
+    mbar('Calories',tot.kcal,tg.kcal,'linear-gradient(90deg,var(--ember),var(--candle))')+
+    mbar('Carbs',tot.c,tg.c,'#C9A24B')+
+    mbar('Fat',tot.f,tg.f,'#B98A6A');
+  document.getElementById('phaseEat').textContent=tg.note;
+  // favorites
+  document.getElementById('favList').innerHTML=S.favorites.map(function(fv,i){
+    return '<span class="chip" onclick="logFav('+i+')">'+fv.name+'<span class="cm">'+fv.p+'p · '+kcalOf(fv.p,fv.c,fv.f)+'cal</span></span>';
+  }).join('');
+  // log
+  var ms=dayMeals();
+  document.getElementById('mealLog').innerHTML=ms.length?ms.map(function(m,i){
+    return '<div class="logrow"><div><div>'+m.t+'</div><div class="macros">'+Math.round(m.p)+'p · '+Math.round(m.c)+'c · '+Math.round(m.f)+'f · '+(m.kcal||kcalOf(m.p,m.c,m.f))+'cal</div></div><div class="x" onclick="delMeal('+i+')">×</div></div>';
+  }).join(''):'<div class="note">Nothing logged yet today.</div>';
+}
+function parseMeal(){
+  var txt=document.getElementById('mealInput').value.trim();if(!txt)return;
+  var r=parseMealText(txt);
+  var p=0,c=0,f=0;r.items.forEach(function(it){p+=it.p;c+=it.c;f+=it.f;});
+  var histWarn=r.items.some(function(it){return it.hist==='high';});
+  var ci=cycleInfo();
+  var out='<hr class="d"><div class="tiny muted">Estimated — tweak if it\'s off:</div>';
+  if(r.items.length)out+='<div class="note" style="margin-top:4px">'+r.items.map(function(it){return it.qty+'× '+it.n+(it.hist==='high'?' ⚠':'');}).join(', ')+'</div>';
+  if(r.unknown.length)out+='<div class="note" style="color:var(--ember)">Didn\'t recognize: '+r.unknown.join(', ')+' — add its macros into the totals below.</div>';
+  if(histWarn&&(ci.phase.key==='ovulation'||ci.lateLuteal))out+='<div class="note" style="color:#E59DAE">⚠ High-histamine food in your '+(ci.lateLuteal?'late-luteal (cheek-flare)':'ovulation')+' window. Consider DAO first, or swap.</div>';
+  out+='<div class="row2" style="margin-top:10px">'+
+    '<div style="flex:1;min-width:70px"><label class="fl">Protein</label><input id="ep" type="number" value="'+Math.round(p)+'"></div>'+
+    '<div style="flex:1;min-width:70px"><label class="fl">Carb</label><input id="ec" type="number" value="'+Math.round(c)+'"></div>'+
+    '<div style="flex:1;min-width:70px"><label class="fl">Fat</label><input id="ef" type="number" value="'+Math.round(f)+'"></div></div>'+
+    '<div style="margin-top:10px"><button class="act" onclick="confirmMeal()">log this plate</button></div>';
+  document.getElementById('parseOut').innerHTML=out;
+}
+function confirmMeal(){
+  var txt=document.getElementById('mealInput').value.trim();
+  var p=+document.getElementById('ep').value||0,c=+document.getElementById('ec').value||0,f=+document.getElementById('ef').value||0;
+  logMeal(txt,p,c,f);
+  document.getElementById('mealInput').value='';document.getElementById('parseOut').innerHTML='';
+}
+function logMeal(t,p,c,f){
+  var k=todayKey();if(!S.meals[k])S.meals[k]=[];
+  S.meals[k].push({id:Date.now(),t:t,p:p,c:c,f:f,kcal:kcalOf(p,c,f),phase:cycleInfo().phase.key,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
+  persist();renderMeals();renderToday();flash('Logged. '+Math.round(p)+'g protein in.');
+}
+function logFav(i){var fv=S.favorites[i];logMeal(fv.name,fv.p,fv.c,fv.f);}
+function delMeal(i){S.meals[todayKey()].splice(i,1);persist();renderMeals();renderToday();}
+function addFavPrompt(){
+  var nm=prompt('Name this favorite (e.g. "My breakfast bowl"):');if(!nm)return;
+  var p=prompt('Protein (g)?'),c=prompt('Carbs (g)?'),f=prompt('Fat (g)?');
+  S.favorites.push({name:nm,p:+p||0,c:+c||0,f:+f||0});persist();renderMeals();
+}
+
+function renderCycle(){
+  var ci=cycleInfo();
+  document.getElementById('cycleRingBox').innerHTML=cycleRingSVG(ci);
+  document.getElementById('cyclePhaseLine').textContent=ci.phase.name+' · '+ci.phase.moon+' · day '+ci.day+' of '+ci.len;
+  var g=GUIDE[ci.phase.key];
+  document.getElementById('guideSub').textContent='Pulled straight from your Kairos protocols.';
+  var rows=[
+   {i:'🍽',l:'Eat',t:g.eat},{i:'🏋️',l:'Move',t:g.move},{i:'☕',l:'Caffeine',t:g.caf},
+   {i:'✨',l:'Skin',t:g.skin},{i:'💊',l:'Supplements',t:g.supp}
+  ];
+  if(ci.lateLuteal)rows.unshift({i:'🌹',l:'Late-luteal flare watch',t:'Strip to barrier basics, no actives, cool compress. Histamine + estrogen-drop window for your cheeks. Nettle infusion + quercetin.'});
+  document.getElementById('phaseGuide').innerHTML=rows.map(function(r){
+    return '<div class="gitem'+(r.l.indexOf('flare')>=0?' flag':'')+'"><div class="gi">'+r.i+'</div><div><div class="gl">'+r.l+'</div><div class="gt">'+r.t+'</div></div></div>';
+  }).join('');
+}
+function cycleRingSVG(ci){
+  var size=200,r=84,cx=100,c=2*Math.PI*r;
+  var seg='';var cum=0;
+  PHASES.forEach(function(p){
+    var s=p.start,e=Math.min(p.end,ci.len);if(s>ci.len)return;
+    var frac=(e-s+1)/ci.len;var dash=c*frac;var off=-c*((s-1)/ci.len);
+    seg+='<circle cx="'+cx+'" cy="'+cx+'" r="'+r+'" stroke="'+p.color+'" stroke-width="13" fill="none" stroke-dasharray="'+dash+' '+(c-dash)+'" stroke-dashoffset="'+off+'" opacity="'+(p.key===ci.phase.key?1:.32)+'"/>';
+  });
+  var ang=2*Math.PI*((ci.day-.5)/ci.len)-Math.PI/2;
+  var mx=cx+Math.cos(ang)*r,my=cx+Math.sin(ang)*r;
+  return '<div class="ring-wrap"><svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" style="transform:rotate(-90deg)">'+seg+
+    '<circle cx="'+mx+'" cy="'+my+'" r="7" fill="#ECE9F4" style="filter:drop-shadow(0 0 5px rgba(236,233,244,.9))"/></svg>'+
+    '<div class="ring-center"><div class="big">'+ci.day+'</div><div class="lab" style="color:'+ci.phase.color+'">'+ci.phase.name+'</div></div></div>';
+}
+function renderTend(){
+  var sched=suppSchedule(),done=S.supps[todayKey()]||{};
+  document.getElementById('suppSub').textContent='Your real schedule'+(cycleInfo().phase.key==='ovulation'?' — histamine layer added for ovulation.':cycleInfo().phase.key==='menstrual'?' — iron + energy emphasis for menstrual.':'.');
+  document.getElementById('suppList').innerHTML=sched.map(function(s){
+    var d=!!done[s.id];
+    return '<div class="chk'+(d?' done':'')+'" onclick="toggleSupp(\''+s.id+'\')"><div class="box">'+(d?'✓':'')+'</div><div class="ct"><span class="when">'+s.when+'</span>'+s.name+(s.phase?'<span class="tag phase">phase</span>':'')+(s.hist?'<span class="tag hist">histamine</span>':'')+'<span class="nt">'+s.nt+'</span></div></div>';
+  }).join('');
+  document.getElementById('dailyQ').textContent=todaysQ();
+  var cs=(S.counts||[]).filter(function(x){return x.date===new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'});});
+  document.getElementById('countList').innerHTML=(S.counts||[]).slice(-4).reverse().map(function(x){return '<div class="logrow"><div><div class="tiny muted">'+x.date+'</div>'+x.text+'</div></div>';}).join('');
+  var rdone=S.rites[riteKey()]||{};
+  document.getElementById('ritesList').innerHTML=RITES.map(function(r){
+    var d=!!rdone[r.id];
+    return '<div class="chk'+(d?' done':'')+'" onclick="toggleRite(\''+r.id+'\')"><div class="box">'+(d?'✓':'')+'</div><div class="ct">'+r.t+'</div></div>';
+  }).join('');
+}
+function toggleSupp(id){var k=todayKey();if(!S.supps[k])S.supps[k]={};S.supps[k][id]=!S.supps[k][id];persist();renderTend();renderToday();}
+function toggleRite(id){var k=riteKey();if(!S.rites[k])S.rites[k]={};S.rites[k][id]=!S.rites[k][id];persist();renderTend();}
+function addCount(){
+  var t=document.getElementById('countText').value.trim();if(!t)return;
+  S.counts.push({id:Date.now(),text:t,date:new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'}),q:todaysQ()});
+  persist();document.getElementById('countText').value='';renderTend();flash('Logged. It counts.');
+}
+
+/* ============ sync ============ */
+function syncPayload(){
+  return {_ember:true,version:1,exportedAt:new Date().toISOString(),
+    lastPeriodStart:S.lastPeriodStart,cycleLength:S.cycleLength,cycleUpdatedAt:S.cycleUpdatedAt,
+    hydration:S.hydration,meals:S.meals,symptoms:S.symptoms,supps:S.supps,
+    counts:S.counts,rites:S.rites,favorites:S.favorites};
+}
+function syncBlob(){return new Blob([JSON.stringify(syncPayload(),null,0)],{type:'application/json'});}
+function carryHome(){
+  var file=new File([syncBlob()],'ember-sync-'+todayKey()+'.json',{type:'application/json'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:'The Ember',text:'Carry the Ember home to Vesta'}).then(function(){
+      S.lastSync=Date.now();persist();renderToday();
+    }).catch(function(){});
+  }else{downloadSync();}
+}
+function downloadSync(){
+  var url=URL.createObjectURL(syncBlob());var a=document.createElement('a');
+  a.href=url;a.download='ember-sync-'+todayKey()+'.json';document.body.appendChild(a);a.click();a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url);},2000);
+  S.lastSync=Date.now();persist();renderToday();flash('Saved. AirDrop it to your Mac.');
+}
+
+/* ============ nav + boot ============ */
+function flash(msg){var f=document.getElementById('flash');f.textContent=msg;f.classList.add('show');clearTimeout(window._ft);window._ft=setTimeout(function(){f.classList.remove('show');},2200);}
+function renderAll(){renderHeader();renderToday();renderWater();renderMeals();renderCycle();renderTend();}
+document.querySelectorAll('nav.tabs button').forEach(function(b){
+  b.onclick=function(){
+    document.querySelectorAll('nav.tabs button').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    var pg=b.dataset.pg;
+    document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');});
+    document.getElementById('pg-'+pg).classList.add('on');
+    window.scrollTo(0,0);
+  };
+});
+renderAll();
+
+/* register service worker for offline (only works over https / GitHub Pages — fails silently elsewhere) */
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+</script>
+</body>
+</html>
