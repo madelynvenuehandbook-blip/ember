@@ -176,6 +176,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 .entry .en{color:var(--cream);overflow:hidden;text-overflow:ellipsis}
 .entry .em2{font-size:13px;color:var(--muted);margin-top:3px}
 .entry .ec{flex:0 0 auto;color:var(--moonlight);font-size:15px;text-align:right}
+.entry .erx{flex:0 0 auto;font-size:18px;padding:0 8px;cursor:pointer;line-height:1;align-self:center}
 .addbtn{display:block;width:100%;text-align:center;border:1px dashed var(--line);background:rgba(236,233,244,.03);color:var(--candle);
   border-radius:12px;padding:12px;font-size:15px;cursor:pointer;margin-top:6px}
 .addbtn:active{transform:scale(.98);background:rgba(232,185,106,.08)}
@@ -389,6 +390,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       <button class="ghost" onclick="openCopy()">⧉ Copy a day / meal</button>
       <button class="ghost" onclick="openCreate('food')">＋ Custom food</button>
       <button class="ghost" onclick="openCreate('recipe')">＋ Recipe</button>
+      <button class="ghost" onclick="openReactReport()">✨ Reactions</button>
     </div>
 
     <div id="diaryBody"></div>
@@ -468,6 +470,12 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 </div>
 
 <div class="serv" id="servSheet"><div id="servBody"></div></div>
+<div class="serv" id="reactSheet"><div id="reactBody"></div></div>
+
+<div class="sheet" id="reactReportSheet">
+  <div class="sheet-h"><div class="st">How foods sit with you</div><div class="sx" onclick="closeReactReport()">×</div></div>
+  <div class="sheet-b" id="reactReportBody"></div>
+</div>
 
 <div class="sheet" id="recipeSheet">
   <div class="sheet-h"><div class="st">Recipe</div><div class="sx" onclick="closeRecipe()">×</div></div>
@@ -761,6 +769,17 @@ var FOODSDB=[
 ];
 function r1(x){return Math.round(x*10)/10;}
 function nutrFromV(v,grams){var z=grams/100;return {kcal:Math.round((v[0]*4+v[1]*4+v[2]*9)*z),p:r1(v[0]*z),c:r1(v[1]*z),f:r1(v[2]*z),fib:r1(v[3]*z),sug:r1(v[4]*z),sod:Math.round(v[5]*z),pot:Math.round(v[6]*z),iron:r1(v[7]*z),mag:Math.round(v[8]*z)};}
+var FOOD_HIST={egg:1,eggwhite:2,gbeef:0,steak:0,beefstew:0,beefchili:0,cod:0,tuna:2,salmon:1,shrimp:2,tofu:1,tempeh:2,gyog:2,cottage:1,ricotta:1,cheddar:2,milk:1,almondmilk:0,oatmilk:0,pork:1,bacon:2,lentils:1,blackbeans:1,chickpeas:1,edamame:1,protein:1,pumpkinseeds:0,hempseeds:0,chia:0,almonds:1,walnuts:2,almondbutter:1,peanutbutter:2,gfoats:0,quinoa:0,whiterice:0,brownrice:0,gfpasta:0,gfbread:1,corntortilla:0,sweetpotato:0,potato:0,squash:0,banana:1,apple:0,blueberries:0,strawberries:2,orange:2,grapes:1,mango:1,dates:1,avocado:2,guacamole:2,spinach:2,kale:0,broccoli:0,brussels:0,cauliflower:0,carrots:0,beets:0,zucchini:0,bellpepper:0,tomato:2,cucumber:0,mushroom:1,asparagus:0,greenbeans:0,salad:0,oliveoil:0,butter:0,darkchoc:2,honey:0,maple:0,hummus:1,sauerkraut:2,kimchi:2,bonebroth:2,coffee:1};
+var FOOD_X={egg:{se:30,zn:1.3,io:24,ca:56},cod:{se:33,zn:0.5,io:110,ca:16},tuna:{se:80,zn:0.6,io:12,ca:8},salmon:{se:36,zn:0.6,io:15,ca:12},shrimp:{se:40,zn:1.6,io:35,ca:70},gbeef:{se:18,zn:6,io:1.5,ca:18},steak:{se:14,zn:5,io:1,ca:6},pork:{se:35,zn:2.5,io:1,ca:6},tofu:{se:9,zn:1.6,io:1,ca:350},tempeh:{se:9,zn:1.1,io:0,ca:111},gyog:{se:9,zn:0.6,io:30,ca:110},cottage:{se:9,zn:0.4,io:0,ca:83},ricotta:{se:15,zn:1.2,io:0,ca:207},cheddar:{se:14,zn:3.1,io:20,ca:710},milk:{se:2,zn:0.4,io:30,ca:120},pumpkinseeds:{se:9,zn:7.6,io:0,ca:46},hempseeds:{se:0,zn:10,io:0,ca:70},chia:{se:55,zn:4.6,io:0,ca:631},almonds:{se:4,zn:3.1,io:0,ca:269},walnuts:{se:4.9,zn:3.1,io:0,ca:98},lentils:{se:3,zn:1.3,io:0,ca:19},blackbeans:{se:1,zn:1.1,io:0,ca:27},chickpeas:{se:4,zn:1.5,io:0,ca:49},edamame:{se:1,zn:1.3,io:0,ca:63},spinach:{se:1,zn:0.5,io:12,ca:136},kale:{se:0.9,zn:0.4,io:0,ca:150},broccoli:{se:2.5,zn:0.4,io:15,ca:47},brussels:{se:1.6,zn:0.4,io:0,ca:42},gfoats:{se:28,zn:3.6,io:0,ca:52},quinoa:{se:3,zn:1.1,io:0,ca:17},brownrice:{se:10,zn:0.6,io:0,ca:10},darkchoc:{se:6.8,zn:3.3,io:0,ca:73},sweetpotato:{se:0.6,zn:0.3,io:0,ca:30},banana:{se:1,zn:0.2,io:0,ca:5},beets:{se:0.7,zn:0.3,io:0,ca:16},bonebroth:{se:0,zn:0.4,io:0,ca:14}};
+function normalizeFoods(){FOODSDB.forEach(function(f){if(f.h==null)f.h=FOOD_HIST[f.id]||0;if(!f.x)f.x=FOOD_X[f.id]||{};});(S.customFoods||[]).forEach(function(f){if(f.h==null)f.h=0;if(!f.x)f.x={};});}
+function nutrX(f,grams){var z=grams/100,x=f.x||{};return {se:r1((x.se||0)*z),zn:r1((x.zn||0)*z),io:Math.round((x.io||0)*z),ca:Math.round((x.ca||0)*z)};}
+function isReactivePhase(dk){var len=S.cycleLength||29,day=dayNumFor(dk),ph=phaseForDay(day).key;return ph==='ovulation'||(ph==='luteal'&&day>=len-4);}
+function histWord(h){return h>=2?'high':(h===1?'moderate':'low');}
+function dayHist(list){var load=0,hi=[];list.forEach(function(e){var h=e.h||0;if(e.leftover)h=Math.max(h,2)+1;load+=h;if((e.h||0)>=2||e.leftover)hi.push(e.name+(e.leftover?' (leftover)':''));});return {load:load,hi:hi};}
+function histLabel(load,reactive){var t=reactive?[1,3,5]:[2,4,7];if(load<=t[0])return ['Calm','#6FA88C'];if(load<=t[1])return ['Low','#C9A24B'];if(load<=t[2])return ['Moderate','#E0743C'];return ['High','#9B5C6E'];}
+var PRODUCE={blueberries:1,strawberries:1,banana:1,apple:1,orange:1,grapes:1,mango:1,dates:1,spinach:1,kale:1,broccoli:1,brussels:1,cauliflower:1,carrots:1,beets:1,zucchini:1,bellpepper:1,tomato:1,cucumber:1,mushroom:1,asparagus:1,greenbeans:1,salad:1,avocado:1,sweetpotato:1,squash:1,potato:1};
+var OMEGA3={salmon:1,cod:1,chia:1,hempseeds:1,walnuts:1,tuna:1};
+function nourish(dk){var fl=flatDay(dk),tot=sumEntries(fl),ph=phaseForDay(dayNumFor(dk)).key,tg=targetsFor(ph),nt=nutrientTargetsFor(ph),seen={},colors=0,om=false;fl.forEach(function(e){if(PRODUCE[e.fid]&&!seen[e.fid]){seen[e.fid]=1;colors++;}if(OMEGA3[e.fid])om=true;});return {protein:tot.p>=tg.p*0.8,colors:colors,omega3:om,fiber:tot.fib>=nt.fib*0.7};}
 function allFoods(){return FOODSDB.concat(S.customFoods||[]);}
 function foodById(id){var a=allFoods();for(var i=0;i<a.length;i++){if(a[i].id===id)return a[i];}return null;}
 function recipeById(id){return (S.recipes||[]).filter(function(r){return r.id===id;})[0]||null;}
@@ -853,8 +872,8 @@ var MEAL_LABEL={breakfast:'Breakfast',lunch:'Lunch',dinner:'Dinner',snacks:'Snac
 function diaryFor(dk){if(!S.diary[dk])S.diary[dk]={breakfast:[],lunch:[],dinner:[],snacks:[]};return S.diary[dk];}
 function flatDay(dk){var d=S.diary[dk];if(!d)return [];return d.breakfast.concat(d.lunch,d.dinner,d.snacks);}
 function dayMeals(){return flatDay(todayKey());}
-function blankTot(){return {kcal:0,p:0,c:0,f:0,fib:0,sug:0,sod:0,pot:0,iron:0,mag:0};}
-function sumEntries(list){var t=blankTot();list.forEach(function(m){t.kcal+=m.kcal||0;t.p+=m.p||0;t.c+=m.c||0;t.f+=m.f||0;t.fib+=m.fib||0;t.sug+=m.sug||0;t.sod+=m.sod||0;t.pot+=m.pot||0;t.iron+=m.iron||0;t.mag+=m.mag||0;});return t;}
+function blankTot(){return {kcal:0,p:0,c:0,f:0,fib:0,sug:0,sod:0,pot:0,iron:0,mag:0,se:0,zn:0,io:0,ca:0};}
+function sumEntries(list){var t=blankTot();list.forEach(function(m){t.kcal+=m.kcal||0;t.p+=m.p||0;t.c+=m.c||0;t.f+=m.f||0;t.fib+=m.fib||0;t.sug+=m.sug||0;t.sod+=m.sod||0;t.pot+=m.pot||0;t.iron+=m.iron||0;t.mag+=m.mag||0;t.se+=m.se||0;t.zn+=m.zn||0;t.io+=m.io||0;t.ca+=m.ca||0;});return t;}
 function macroTotals(){return sumEntries(flatDay(todayKey()));}
 function todayWater(){return (S.hydration[todayKey()]||{ml:0,lyte:0});}
 
@@ -950,11 +969,11 @@ function renderMonth(){
   document.getElementById('monthLegend').innerHTML=PHASES.map(function(p){return '<span><i style="background:'+p.color+'"></i>'+p.name+'</span>';}).join('');
 }
 function pickMonthDay(dk){_viewDate=dk;closeMonth();renderMeals();}
-function nutrientTargetsFor(ph){var sod=5000,iron=18;if(ph==='ovulation'||ph==='menstrual')sod=7000;if(ph==='menstrual')iron=27;return {fib:28,sug:50,sod:sod,pot:3500,iron:iron,mag:350};}
+function nutrientTargetsFor(ph){var sod=5000,iron=18;if(ph==='ovulation'||ph==='menstrual')sod=7000;if(ph==='menstrual')iron=27;return {fib:28,sug:50,sod:sod,pot:3500,iron:iron,mag:350,se:55,zn:9,io:150,ca:1000};}
 function nutrientTargets(){return nutrientTargetsFor(cycleInfo().phase.key);}
 
 function migrateMeals(){if(!S.meals)return;Object.keys(S.meals).forEach(function(dk){if(S.diary[dk])return;var arr=S.meals[dk]||[];if(!arr.length)return;var d={breakfast:[],lunch:[],dinner:[],snacks:[]};arr.forEach(function(m){var k=kcalOf(m.p||0,m.c||0,m.f||0);d.snacks.push({id:m.id||Date.now()+Math.floor(Math.random()*9999),name:m.t||'logged',qty:1,serv:'serving',grams:0,fid:null,kcal:m.kcal||k,p:m.p||0,c:m.c||0,f:m.f||0,fib:0,sug:0,sod:0,pot:0,iron:0,mag:0,phase:m.phase||phaseKeyForDate(dk),time:m.time||'',meal:'snacks'});});S.diary[dk]=d;});}
-function seedRecipes(){if(S.recipes&&S.recipes.length)return;var seed=[['Tofu lemon ricotta pasta',25,55,18,['dinner','lunch'],['follicular','luteal']],['Beef + sweet potato chili',28,35,14,['dinner'],['menstrual','luteal']],['Beef stew (the batch)',30,20,18,['dinner','lunch'],['menstrual']],['Cod + roasted beets',32,15,3,['dinner','lunch'],['ovulation','menstrual']],['Eggs over spinach + GF toast',16,17,12,['breakfast'],['follicular','menstrual']],['Green protein smoothie',25,30,6,['breakfast','snacks'],['follicular','ovulation']]];S.recipes=seed.map(function(x,i){return {id:'r'+(i+1),name:x[0],servings:1,ing:[],meals:x[4],phases:x[5],note:'',per:{kcal:kcalOf(x[1],x[2],x[3]),p:x[1],c:x[2],f:x[3],fib:0,sug:0,sod:0,pot:0,iron:0,mag:0}};});}
+function seedRecipes(){if(S.recipes&&S.recipes.length)return;var seed=[['Tofu lemon ricotta pasta',25,55,18,['dinner','lunch'],['follicular','luteal'],false],['Beef + sweet potato chili',28,35,14,['dinner'],['menstrual','luteal'],true],['Beef stew (the batch)',30,20,18,['dinner','lunch'],['menstrual'],true],['Cod + roasted beets',32,15,3,['dinner','lunch'],['ovulation','menstrual'],false],['Eggs over spinach + GF toast',16,17,12,['breakfast'],['follicular','menstrual'],true],['Green protein smoothie',25,30,6,['breakfast','snacks'],['follicular','ovulation'],true]];S.recipes=seed.map(function(x,i){return {id:'r'+(i+1),name:x[0],servings:1,ing:[],meals:x[4],phases:x[5],easy:x[6],note:'',per:{kcal:kcalOf(x[1],x[2],x[3]),p:x[1],c:x[2],f:x[3],fib:0,sug:0,sod:0,pot:0,iron:0,mag:0}};});}
 
 function microBar(lab,val,goal,unit,color,limit){var pct=goal?Math.min(1,val/goal):0;var over=val>goal;var c=limit?(over?'var(--rose)':color):color;return '<div class="micro"><div class="mt"><span>'+lab+'</span><b>'+Math.round(val)+(unit||'')+' / '+goal+(unit||'')+'</b></div><div class="tk"><div class="fl" style="width:'+(pct*100)+'%;background:'+c+'"></div></div></div>';}
 
@@ -969,8 +988,10 @@ function renderMeals(){
   document.getElementById('calRing').innerHTML=ring(tot.kcal/tg.kcal,(calLeft>=0?calLeft:'+'+(-calLeft)),(calLeft>=0?'cal left':'cal over'),Math.round(tg.kcal)+' goal','#E0743C',128);
   document.getElementById('protRing2').innerHTML=ring(tot.p/tg.p,Math.round(tot.p),'protein',tg.p+'g goal','#4FB68C',128);
   document.getElementById('calEqn').innerHTML='Goal <b>'+Math.round(tg.kcal)+'</b> − Food <b>'+Math.round(tot.kcal)+'</b> = <b>'+calLeft+'</b> left';
-  document.getElementById('macroRings').innerHTML=mbar('Protein · your priority',tot.p,tg.p,'var(--green)')+mbar('Carbs',tot.c,tg.c,'#C9A24B')+mbar('Fat',tot.f,tg.f,'#B98A6A');
-  document.getElementById('microBody').innerHTML='<div class="microgrid">'+microBar('Fiber',tot.fib,nt.fib,'g','#6FA88C')+microBar('Sugar',tot.sug,nt.sug,'g','#C9A24B',true)+microBar('Sodium',tot.sod,nt.sod,'mg','#5FA8D3')+microBar('Potassium',tot.pot,nt.pot,'mg','#9B8AC4')+microBar('Iron',tot.iron,nt.iron,'mg','#B86A6A')+microBar('Magnesium',tot.mag,nt.mag,'mg','#6FA88C')+'</div><div class="note">Targets follow this day&#39;s phase ('+vp.phase.name+'). Sodium rises in ovulation + menstrual; iron rises in menstrual; sugar is a ceiling.</div>';
+  var _no=nourish(dk),_np=[];if(_no.protein)_np.push('protein ✓');if(_no.colors)_np.push(_no.colors+' color'+(_no.colors>1?'s':''));if(_no.omega3)_np.push('omega-3 ✓');if(_no.fiber)_np.push('fiber ✓');document.getElementById('macroRings').innerHTML='<div class="note" style="color:var(--green);margin:0 0 12px">Nourishment ✨ '+(_np.length?_np.join(' · '):'log a meal to begin')+'</div>'+mbar('Protein · your priority',tot.p,tg.p,'var(--green)')+mbar('Carbs',tot.c,tg.c,'#C9A24B')+mbar('Fat',tot.f,tg.f,'#B98A6A');
+  var _hist=dayHist(flatDay(dk)),_hl=histLabel(_hist.load,isReactivePhase(dk));
+  var _histHtml='<div class="micro" style="margin-bottom:14px"><div class="mt"><span>Histamine load'+(isReactivePhase(dk)?' <span class="tiny" style="color:#E59DAE">\u00b7 reactive window</span>':'')+'</span><b style="color:'+_hl[1]+'">'+_hl[0]+'</b></div><div class="tk"><div class="fl" style="width:'+Math.min(100,_hist.load/12*100)+'%;background:'+_hl[1]+'"></div></div>'+(_hist.hi.length?'<div class="note" style="margin-top:6px">Higher-histamine: '+_hist.hi.slice(0,4).join(', ')+'</div>':'')+'</div>';
+  document.getElementById('microBody').innerHTML=_histHtml+'<div class="microgrid">'+microBar('Fiber',tot.fib,nt.fib,'g','#6FA88C')+microBar('Sugar',tot.sug,nt.sug,'g','#C9A24B',true)+microBar('Sodium',tot.sod,nt.sod,'mg','#5FA8D3')+microBar('Potassium',tot.pot,nt.pot,'mg','#9B8AC4')+microBar('Iron',tot.iron,nt.iron,'mg','#B86A6A')+microBar('Magnesium',tot.mag,nt.mag,'mg','#6FA88C')+microBar('Calcium',tot.ca,nt.ca,'mg','#C4CBE6')+microBar('Zinc',tot.zn,nt.zn,'mg','#B86A6A')+microBar('Selenium',tot.se,nt.se,'mcg','#6FA88C')+microBar('Iodine',tot.io,nt.io,'mcg','#5FA8D3')+'</div><div class="note">Selenium, zinc + iodine support your thyroid; calcium is tracked partly for Unithroid timing. Sodium + iron rise with your phase; sugar is a ceiling.</div>';
   document.getElementById('phaseEat').textContent=tg.note;
   var d=diaryFor(dk),html='';
   var empty=!flatDay(dk).length;
@@ -1031,7 +1052,7 @@ function pickOff(i){var f=_offResults[i];if(!f)return;if(!foodById(f.id)){S.cust
 function lookupBarcode(code){flash('Looking up…');fetch('https://world.openfoodfacts.org/api/v0/product/'+encodeURIComponent(code)+'.json').then(function(r){return r.json();}).then(function(j){if(j.status===1&&j.product){var f=mapOFF(j.product);f.id='off_'+code;if(!foodById(f.id)){S.customFoods.push(f);persist();}if(!document.getElementById('foodSheet').classList.contains('open'))showEl('foodSheet');openServFood(f.id);}else{flash('Not found. Search by name.');}}).catch(function(){flash('Lookup failed.');});}
 
 /* ---- serving picker ---- */
-function openServFood(id,edit){var f=foodById(id);if(!f)return;_servCtx={kind:'food',ref:f,servIdx:0,grams:f.serv[0][1],qty:1,meal:_meal,edit:edit||null};servRender();showEl('backdrop');showEl('servSheet');}
+function openServFood(id,edit){var f=foodById(id);if(!f)return;_servCtx={kind:'food',ref:f,servIdx:0,grams:f.serv[0][1],qty:1,meal:_meal,leftover:false,edit:edit||null};servRender();showEl('backdrop');showEl('servSheet');}
 function openServRecipe(id,edit){var r=recipeById(id);if(!r)return;_servCtx={kind:'recipe',ref:r,qty:1,meal:_meal,edit:edit||null};servRender();showEl('backdrop');showEl('servSheet');}
 function editEntry(mk,id){var e=flatDay(viewKey()).filter(function(x){return String(x.id)===String(id);})[0];if(!e)return;_meal=mk;if(e.rid&&recipeById(e.rid)){openServRecipe(e.rid,{meal:mk,id:id});if(_servCtx){_servCtx.qty=e.qty||1;servRender();}}else if(e.fid&&foodById(e.fid)){openServFood(e.fid,{meal:mk,id:id});if(_servCtx){var f=_servCtx.ref;var si=f.serv.map(function(x){return x[0];}).indexOf(e.serv);_servCtx.servIdx=si>=0?si:0;_servCtx.grams=si>=0?f.serv[si][1]:(e.grams||100);_servCtx.qty=e.qty||1;servRender();}}else{flash('Logged manually — delete and re-add to change.');}}
 function servRender(){var c=_servCtx;if(!c)return;var h='';
@@ -1040,6 +1061,9 @@ function servRender(){var c=_servCtx;if(!c)return;var h='';
     h+='<div class="svrow"><div><label class="fl">Serving</label><select onchange="servSel(this.value)">'+f.serv.map(function(s,i){return '<option value="'+i+'"'+(i===c.servIdx?' selected':'')+'>'+s[0]+'</option>';}).join('')+'<option value="g"'+(c.servIdx<0?' selected':'')+'>custom grams…</option></select></div><div><label class="fl">Quantity</label><input type="number" inputmode="decimal" value="'+c.qty+'" oninput="servQty(this.value)"></div></div>';
     if(c.servIdx<0)h+='<div style="margin-top:10px"><label class="fl">Grams</label><input type="number" inputmode="decimal" value="'+c.grams+'" oninput="servGrams(this.value)"></div>';
     h+=svPrev(n);
+    if((f.h||0)>=1)h+='<div class="note" style="margin-top:6px">Histamine: '+histWord(f.h)+'</div>';
+    h+='<div class="toggle'+(c.leftover?' on':'')+'" onclick="servLeftover()"><div class="sw"></div><div>Leftover (cooked &gt;24h ago)</div></div>';
+    if(isReactivePhase(viewKey())&&((f.h||0)>=2||c.leftover))h+='<div class="note" style="color:#E59DAE">\u26a0 High-histamine in your '+viewPhaseInfo(viewKey()).phase.name+' window. Consider DAO first, or a low-histamine swap.</div>';
   }else{var r=c.ref;var per=r.per;var n={kcal:per.kcal*c.qty,p:per.p*c.qty,c:per.c*c.qty,f:per.f*c.qty};
     h+='<div class="svn">'+r.name+'</div><div class="svb">'+r.servings+'-serving recipe · logging by serving</div>';
     h+='<div class="svrow"><div><label class="fl">Servings</label><input type="number" inputmode="decimal" value="'+c.qty+'" oninput="servQty(this.value)"></div></div>'+svPrev(n);
@@ -1052,13 +1076,35 @@ function servSel(val){var c=_servCtx,f=c.ref;if(val==='g'){c.servIdx=-1;}else{c.
 function servGrams(v){_servCtx.grams=num(v);servRender();}
 function servQty(v){_servCtx.qty=num(v)||1;servRender();}
 function servMeal(mk){_servCtx.meal=mk;servRender();}
-function closeServ(){hideEl('servSheet');hideEl('backdrop');_servCtx=null;}
+function servLeftover(){_servCtx.leftover=!_servCtx.leftover;servRender();}
+function closeServ(){hideEl('servSheet');hideEl('reactSheet');hideEl('backdrop');_servCtx=null;}
 function servAdd(){var c=_servCtx;if(!c)return;var vph=phaseKeyForDate(viewKey()),vt=(viewKey()===todayKey()?nowTime():'');var e,d=diaryFor(viewKey());
-  if(c.kind==='food'){var f=c.ref,n=nutrFromV(f.v,c.grams*c.qty);e={id:Date.now()+Math.floor(Math.random()*999),name:(f.br?f.br+' ':'')+f.n,fid:f.id,qty:c.qty,serv:(c.servIdx>=0?f.serv[c.servIdx][0]:c.grams+' g'),grams:c.grams,kcal:n.kcal,p:n.p,c:n.c,f:n.f,fib:n.fib,sug:n.sug,sod:n.sod,pot:n.pot,iron:n.iron,mag:n.mag,phase:vph,time:vt,meal:c.meal};}
-  else{var r=c.ref,pr=r.per;e={id:Date.now()+Math.floor(Math.random()*999),name:r.name,rid:r.id,qty:c.qty,serv:c.qty+' serving',grams:0,kcal:pr.kcal*c.qty,p:pr.p*c.qty,c:pr.c*c.qty,f:pr.f*c.qty,fib:(pr.fib||0)*c.qty,sug:(pr.sug||0)*c.qty,sod:(pr.sod||0)*c.qty,pot:(pr.pot||0)*c.qty,iron:(pr.iron||0)*c.qty,mag:(pr.mag||0)*c.qty,phase:vph,time:vt,meal:c.meal};}
+  if(c.kind==='food'){var f=c.ref,n=nutrFromV(f.v,c.grams*c.qty),nx=nutrX(f,c.grams*c.qty);e={id:Date.now()+Math.floor(Math.random()*999),name:(f.br?f.br+' ':'')+f.n,fid:f.id,qty:c.qty,serv:(c.servIdx>=0?f.serv[c.servIdx][0]:c.grams+' g'),grams:c.grams,kcal:n.kcal,p:n.p,c:n.c,f:n.f,fib:n.fib,sug:n.sug,sod:n.sod,pot:n.pot,iron:n.iron,mag:n.mag,se:nx.se,zn:nx.zn,io:nx.io,ca:nx.ca,h:(f.h||0),leftover:!!c.leftover,phase:vph,time:vt,meal:c.meal};}
+  else{var r=c.ref,pr=r.per;e={id:Date.now()+Math.floor(Math.random()*999),name:r.name,rid:r.id,qty:c.qty,serv:c.qty+' serving',grams:0,kcal:pr.kcal*c.qty,p:pr.p*c.qty,c:pr.c*c.qty,f:pr.f*c.qty,fib:(pr.fib||0)*c.qty,sug:(pr.sug||0)*c.qty,sod:(pr.sod||0)*c.qty,pot:(pr.pot||0)*c.qty,iron:(pr.iron||0)*c.qty,mag:(pr.mag||0)*c.qty,se:0,zn:0,io:0,ca:0,h:0,leftover:false,phase:vph,time:vt,meal:c.meal};}
   if(c.edit){var od=diaryFor(viewKey());od[c.edit.meal]=(od[c.edit.meal]||[]).filter(function(x){return String(x.id)!==String(c.edit.id);});}
-  d[c.meal].push(e);persist();closeServ();closeFoodSheet();renderMeals();renderToday();renderPatterns();flash('Logged. '+Math.round(e.p)+'g protein in.');}
+  d[c.meal].push(e);persist();closeServ();closeFoodSheet();renderMeals();renderToday();renderPatterns();
+  var msg='Logged. '+Math.round(e.p)+'g protein in.';var ut=(S.supps[todayKey()]||{}).unithroidAt;
+  if(viewKey()===todayKey()&&ut&&(Date.now()-ut)/60000<60&&(e.fid==='coffee'||(e.ca||0)>=150||(e.iron||0)>=3)){msg='⏱ Within 60 min of your Unithroid — coffee, calcium or iron can block it. Wait if you can.';}
+  else if(c.kind==='food'&&isReactivePhase(viewKey())&&((c.ref.h||0)>=2||c.leftover)){msg='Logged · high-histamine in your reactive window. DAO first, or swap.';}
+  flash(msg);}
 function nowTime(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+/* ===== FOOD -> REACTION LOG ===== */
+var REACTIONS=[['great','✨','loved it'],['bloated','🫧','bloated'],['flushed','🔴','flushed'],['foggy','🌫','foggy'],['wired','⚡','wired']];
+var _reactCtx=null;
+function reactEmoji(r){if(!r)return '<span style="opacity:.35;font-size:15px">＋</span>';var x=REACTIONS.filter(function(z){return z[0]===r;})[0];return x?x[1]:'·';}
+function findEntry(mk,id){return (diaryFor(viewKey())[mk]||[]).filter(function(e){return String(e.id)===String(id);})[0];}
+function openReaction(mk,id){_reactCtx={mk:mk,id:id};var e=findEntry(mk,id);var b=document.getElementById('reactBody');
+  b.innerHTML='<div class="svn">How did it sit?</div><div class="svb">'+(e?e.name:'')+'</div><div class="mealpick" style="flex-wrap:wrap">'+REACTIONS.map(function(r){return '<button class="'+((e&&e.reaction===r[0])?'on':'')+'" onclick="setReaction(\''+r[0]+'\')">'+r[1]+' '+r[2]+'</button>';}).join('')+'<button onclick="setReaction(\'\')">clear</button></div>';
+  showEl('backdrop');showEl('reactSheet');}
+function setReaction(val){var e=findEntry(_reactCtx.mk,_reactCtx.id);if(e){e.reaction=val||null;persist();renderMeals();}closeServ();flash(val?'Noted — building your map.':'Cleared.');}
+function reactReport(){var agg={};Object.keys(S.diary||{}).forEach(function(dk){flatDay(dk).forEach(function(e){if(!e.reaction)return;var key=e.fid||(e.rid?'r'+e.rid:e.name);if(!agg[key])agg[key]={name:e.name,great:0,bad:0,counts:{}};var a=agg[key];a.counts[e.reaction]=(a.counts[e.reaction]||0)+1;if(e.reaction==='great')a.great++;else a.bad++;});});var arr=Object.keys(agg).map(function(k){return agg[k];});return {winners:arr.filter(function(a){return a.great>a.bad&&a.great>0;}).sort(function(a,b){return b.great-a.great;}),suspects:arr.filter(function(a){return a.bad>=a.great&&a.bad>0;}).sort(function(a,b){return b.bad-a.bad;})};}
+function reactCounts(a){return Object.keys(a.counts).map(function(k){var r=REACTIONS.filter(function(x){return x[0]===k;})[0];return (r?r[1]:'')+'×'+a.counts[k];}).join('  ');}
+function openReactReport(){var rr=reactReport();var b=document.getElementById('reactReportBody');
+  var h='<div class="sub">Built from how you tag your meals. The more you tag, the sharper this gets — your own elimination-diet detective.</div>';
+  h+='<div class="ksec">Foods that love you back</div>'+(rr.winners.length?rr.winners.map(function(a){return '<div class="rcard"><div class="rn" style="font-size:16px">✨ '+a.name+'</div><div class="rmac">'+reactCounts(a)+'</div></div>';}).join(''):'<div class="note">Tag meals ✨ when you feel great after — they gather here.</div>');
+  h+='<div class="ksec">Suspect foods</div>'+(rr.suspects.length?rr.suspects.map(function(a){return '<div class="rcard"><div class="rn" style="font-size:16px">'+a.name+'</div><div class="rmac">'+reactCounts(a)+'</div></div>';}).join(''):'<div class="note">When a food does not sit well, tap the ＋ on its diary row and flag it. Patterns surface here.</div>');
+  b.innerHTML=h;showEl('reactReportSheet');}
+function closeReactReport(){hideEl('reactReportSheet');}
 
 /* ---- create custom food / recipe ---- */
 function openCreate(kind,editId){var b=document.getElementById('createBody');document.getElementById('createTitle').textContent=(kind==='food'?'Custom food':'Recipe / saved meal');
@@ -1069,13 +1115,14 @@ function openCreate(kind,editId){var b=document.getElementById('createBody');doc
     '<div class="svrow" style="margin-top:10px"><div><label class="fl">Fiber</label><input id="cf_fib" type="number" inputmode="decimal"></div><div><label class="fl">Sugar</label><input id="cf_sug" type="number" inputmode="decimal"></div><div><label class="fl">Sodium mg</label><input id="cf_sod" type="number" inputmode="decimal"></div></div>'+
     '<div class="svrow" style="margin-top:10px"><div><label class="fl">Potassium mg</label><input id="cf_pot" type="number" inputmode="decimal"></div><div><label class="fl">Iron mg</label><input id="cf_iron" type="number" inputmode="decimal"></div><div><label class="fl">Magnesium mg</label><input id="cf_mag" type="number" inputmode="decimal"></div></div>'+
     '<button class="act" style="width:100%;margin-top:16px" onclick="saveCustomFood()">Save to My Foods</button>';}
-  else{var ex=editId?recipeById(editId):null;_recipeDraft=ex?{name:ex.name,servings:ex.servings||1,ing:(ex.ing||[]).slice(),meals:(ex.meals||[]).slice(),phases:(ex.phases||[]).slice(),note:ex.note||'',editId:ex.id}:{name:'',servings:1,ing:[],meals:[],phases:[],note:'',editId:null};
+  else{var ex=editId?recipeById(editId):null;_recipeDraft=ex?{name:ex.name,servings:ex.servings||1,ing:(ex.ing||[]).slice(),meals:(ex.meals||[]).slice(),phases:(ex.phases||[]).slice(),note:ex.note||'',easy:!!ex.easy,editId:ex.id}:{name:'',servings:1,ing:[],meals:[],phases:[],note:'',easy:false,editId:null};
     document.getElementById('createTitle').textContent=ex?'Edit recipe':'New recipe';
     b.innerHTML='<div class="sub">Build a meal once. Tag it by meal type and the phases it suits, so it shows up in your Kitchen.</div>'+
     '<label class="fl">Recipe name</label><input id="rc_n" placeholder="Tofu lemon ricotta pasta" value="'+esc(_recipeDraft.name)+'" oninput="_recipeDraft.name=this.value">'+
     '<div style="margin-top:10px"><label class="fl">Makes how many servings</label><input id="rc_s" type="number" inputmode="decimal" value="'+_recipeDraft.servings+'" oninput="_recipeDraft.servings=+this.value||1;renderRecipeDraft()"></div>'+
     '<div style="margin-top:12px"><label class="fl">Meal type</label><div class="mealpick" id="rc_meals"></div></div>'+
     '<div style="margin-top:8px"><label class="fl">Best in phases (blank = any time)</label><div class="mealpick" id="rc_phases"></div></div>'+
+    '<div id="rc_easy" class="toggle'+(_recipeDraft.easy?' on':'')+'" style="margin-top:6px" onclick="toggleREasy()"><div class="sw"></div><div>Low-spoon / easy (minimal effort)</div></div>'+
     '<div style="margin-top:14px"><label class="fl">Ingredients</label><div id="rc_ing"></div><input id="rc_q" placeholder="search a food to add" style="margin-top:8px"><div id="rc_sug"></div></div>'+
     '<div style="margin-top:10px"><label class="fl">Notes / how to make it (optional)</label><textarea id="rc_note" rows="3" oninput="_recipeDraft.note=this.value">'+esc(_recipeDraft.note)+'</textarea></div>'+
     '<div id="rc_tot" class="note"></div>'+
@@ -1094,10 +1141,11 @@ function rmRecipeIng(i){_recipeDraft.ing.splice(i,1);renderRecipeDraft();}
 function esc(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function toggleRMeal(mk){var a=_recipeDraft.meals,i=a.indexOf(mk);if(i>=0)a.splice(i,1);else a.push(mk);renderRecipeChips();}
 function toggleRPhase(pk){var a=_recipeDraft.phases,i=a.indexOf(pk);if(i>=0)a.splice(i,1);else a.push(pk);renderRecipeChips();}
+function toggleREasy(){_recipeDraft.easy=!_recipeDraft.easy;var t=document.getElementById('rc_easy');if(t)t.className='toggle'+(_recipeDraft.easy?' on':'')+'';}
 function renderRecipeChips(){var mh=document.getElementById('rc_meals');if(mh)mh.innerHTML=MEALSECS.map(function(mk){return '<button class="'+(_recipeDraft.meals.indexOf(mk)>=0?'on':'')+'" onclick="toggleRMeal(\''+mk+'\')">'+MEAL_LABEL[mk]+'</button>';}).join('');var ph=document.getElementById('rc_phases');if(ph)ph.innerHTML=PHASES.map(function(p){return '<button class="'+(_recipeDraft.phases.indexOf(p.key)>=0?'on':'')+'" onclick="toggleRPhase(\''+p.key+'\')">'+p.name+'</button>';}).join('');}
-function normalizeRecipes(){(S.recipes||[]).forEach(function(r){if(!r.meals)r.meals=[];if(!r.phases)r.phases=[];if(r.note==null)r.note='';});}
+function normalizeRecipes(){(S.recipes||[]).forEach(function(r){if(!r.meals)r.meals=[];if(!r.phases)r.phases=[];if(r.note==null)r.note='';if(r.easy==null)r.easy=false;});}
 var _curRecipe=null;
-function recipeTags(r){return (r.meals||[]).map(function(m){return '<span class="tag phase">'+MEAL_LABEL[m]+'</span>';}).join('')+(r.phases||[]).map(function(pk){var p=PHASES.filter(function(x){return x.key===pk;})[0];return '<span class="tag" style="background:'+(p?p.color:'#888')+'33;color:'+(p?p.color:'#aaa')+'">'+(p?p.name:pk)+'</span>';}).join('');}
+function recipeTags(r){return (r.meals||[]).map(function(m){return '<span class="tag phase">'+MEAL_LABEL[m]+'</span>';}).join('')+(r.phases||[]).map(function(pk){var p=PHASES.filter(function(x){return x.key===pk;})[0];return '<span class="tag" style="background:'+(p?p.color:'#888')+'33;color:'+(p?p.color:'#aaa')+'">'+(p?p.name:pk)+'</span>';}).join('')+(r.easy?'<span class="tag" style="background:#6FA88C33;color:#6FA88C">low-spoon</span>':'');}
 function openRecipe(id){var r=recipeById(id);if(!r)return;_curRecipe=id;var b=document.getElementById('recipeBody');var t=recipeTags(r);b.innerHTML='<div class="svn" style="font-size:23px">'+r.name+'</div><div style="margin:8px 0 14px">'+(t||'<span class="tiny muted">untagged</span>')+'</div>'+svPrev({kcal:r.per.kcal,p:r.per.p,c:r.per.c,f:r.per.f})+'<div class="note" style="text-align:center">per serving · makes '+(r.servings||1)+'</div>'+(r.ing&&r.ing.length?'<div style="margin-top:12px"><label class="fl">Ingredients</label>'+r.ing.map(function(g){return '<div class="entry"><div class="ei"><div class="en">'+g.name+'</div><div class="em2">'+g.grams+' g</div></div></div>';}).join('')+'</div>':'')+(r.note?'<div style="margin-top:12px"><label class="fl">Notes</label><div class="note" style="white-space:pre-wrap;color:var(--moonlight)">'+esc(r.note)+'</div></div>':'')+'<div style="display:flex;gap:8px;margin-top:18px"><button class="act" style="flex:1" onclick="logRecipeNow(\''+r.id+'\')">Log it</button><button class="ghost" onclick="editRecipe(\''+r.id+'\')">Edit</button><button class="ghost" onclick="deleteRecipe(\''+r.id+'\')">Delete</button></div>';showEl('recipeSheet');}
 function closeRecipe(){hideEl('recipeSheet');}
 function editRecipe(id){closeRecipe();openCreate('recipe',id);}
@@ -1131,6 +1179,8 @@ var PHASE_IDEAS={
   {t:'Greek yogurt + banana',fid:'gyog',m:'snacks',why:'Protein + potassium; ease caffeine now.'},
   {t:'Pumpkin seeds',fid:'pumpkinseeds',m:'snacks',why:'Magnesium-dense — exactly what luteal craves.'}]
 };
+var EASY_IDEA_FIDS={bonebroth:1,gyog:1,darkchoc:1,pumpkinseeds:1,blueberries:1,dates:1,avocado:1};
+function ideaHtml(it){return '<div class="kidea" onclick="logIdea(\''+it.fid+'\',\''+it.m+'\')"><div class="ki">✦</div><div><div class="kt">'+it.t+'</div><div class="kw">'+it.why+'</div></div></div>';}
 var _kmode='eat',_kfMeal='all',_kfPhase='all',_kSearch='';
 function setKMode(m){_kmode=m;renderKitchen();}
 function setKFMeal(m){_kfMeal=m;renderKitchen();}
@@ -1146,13 +1196,14 @@ function renderKitchen(){
   if(_kmode==='eat'){
     var ph=cycleInfo().phase;
     var html='<div class="note" style="margin:0 0 10px">You are in <b style="color:'+ph.color+'">'+ph.name+'</b> (day '+cycleInfo().day+'). Here is what suits your body today.</div>';
+    if(ph.key==='menstrual'){var er=(S.recipes||[]).filter(function(r){return r.easy;}),ei=(PHASE_IDEAS[ph.key]||[]).filter(function(it){return EASY_IDEA_FIDS[it.fid];});html+='<div class="ksec">Low-spoon for a low-energy day</div>'+((er.length||ei.length)?er.map(recipeCard).join('')+ei.map(ideaHtml).join(''):'<div class="note">Tag recipes “low-spoon” and they show here on menstrual days.</div>');}
     html+=chipRow(KMEALOPTS,_kfMeal,'setKFMeal');
     var mine=(S.recipes||[]).filter(function(r){var pOk=!r.phases||!r.phases.length||r.phases.indexOf(ph.key)>=0;var mOk=_kfMeal==='all'||(r.meals&&r.meals.indexOf(_kfMeal)>=0);return pOk&&mOk;});
     html+='<div class="ksec">Your recipes for '+ph.name+'</div>';
     html+=mine.length?mine.map(recipeCard).join(''):'<div class="note">No saved recipes tagged for this'+(_kfMeal!=='all'?' meal +':'')+' phase yet. Add some in the Recipe book — tag them with their phases.</div>';
     var ideas=(PHASE_IDEAS[ph.key]||[]).filter(function(it){return _kfMeal==='all'||it.m===_kfMeal;});
     html+='<div class="ksec">Try something new · '+ph.name+'</div>';
-    html+=ideas.length?ideas.map(function(it){return '<div class="kidea" onclick="logIdea(\''+it.fid+'\',\''+it.m+'\')"><div class="ki">✦</div><div><div class="kt">'+it.t+'</div><div class="kw">'+it.why+'</div></div></div>';}).join(''):'<div class="note">No ideas for this meal — try All.</div>';
+    html+=ideas.length?ideas.map(ideaHtml).join(''):'<div class="note">No ideas for this meal — try All.</div>';
     host.innerHTML=html;
   }else{
     var phaseOpts=[['all','Any phase']].concat(PHASES.map(function(p){return [p.key,p.name];}));
@@ -1196,13 +1247,13 @@ function renderCopy(){
   b.innerHTML=h;
 }
 var _copyCt=0;
-function copyEntries(list,srcMeal,track){var dmeal=(_copyDestMeal==='same'?srcMeal:_copyDestMeal);var d=diaryFor(_copyDest),vph=phaseKeyForDate(_copyDest);list.forEach(function(e){var n=JSON.parse(JSON.stringify(e));n.id=Date.now()+'_'+(_copyCt++)+'_'+Math.floor(Math.random()*9999);n.phase=vph;n.meal=dmeal;d[dmeal].push(n);track.push({dk:_copyDest,meal:dmeal,id:n.id});});}
+function copyEntries(list,srcMeal,track){var dmeal=(_copyDestMeal==='same'?srcMeal:_copyDestMeal);var d=diaryFor(_copyDest),vph=phaseKeyForDate(_copyDest);list.forEach(function(e){var n=JSON.parse(JSON.stringify(e));n.id=Date.now()+'_'+(_copyCt++)+'_'+Math.floor(Math.random()*9999);n.phase=vph;n.meal=dmeal;n.reaction=null;d[dmeal].push(n);track.push({dk:_copyDest,meal:dmeal,id:n.id});});}
 function removeTracked(tr){tr.forEach(function(t){var d=S.diary[t.dk];if(d&&d[t.meal])d[t.meal]=d[t.meal].filter(function(e){return String(e.id)!==String(t.id);});});persist();renderMeals();renderToday();renderPatterns();}
 function doCopyMeal(mk){var sd=S.diary[_copySrc];if(!sd)return;var tr=[];copyEntries(sd[mk]||[],mk,tr);persist();renderMeals();renderToday();renderPatterns();flash('Copied '+MEAL_LABEL[mk]+' → '+dateLabel(_copyDest)+'.');}
 function doCopyDay(){var sd=S.diary[_copySrc];if(!sd)return;var tr=[];MEALSECS.forEach(function(mk){copyEntries(sd[mk]||[],mk,tr);});persist();renderMeals();renderToday();renderPatterns();hideEl('copySheet');flash('Copied '+dateLabel(_copySrc)+' → '+dateLabel(_copyDest)+'.');}
 function recipeTotals(){var t=blankTot();_recipeDraft.ing.forEach(function(ig){var f=foodById(ig.fid);if(!f)return;var n=nutrFromV(f.v,ig.grams);t.kcal+=n.kcal;t.p+=n.p;t.c+=n.c;t.f+=n.f;t.fib+=n.fib;t.sug+=n.sug;t.sod+=n.sod;t.pot+=n.pot;t.iron+=n.iron;t.mag+=n.mag;});return t;}
 function renderRecipeDraft(){var ing=document.getElementById('rc_ing');if(!ing)return;ing.innerHTML=_recipeDraft.ing.map(function(g,i){return '<div class="entry"><div class="ei"><div class="en">'+g.name+'</div><div class="em2">'+g.grams+' g</div></div><div class="x" onclick="rmRecipeIng('+i+')">×</div></div>';}).join('')||'<div class="note">No ingredients yet.</div>';var t=recipeTotals(),s=_recipeDraft.servings||1;document.getElementById('rc_tot').innerHTML='Per serving (of '+s+'): <b style="color:var(--moon)">'+Math.round(t.kcal/s)+' cal · '+Math.round(t.p/s)+'p · '+Math.round(t.c/s)+'c · '+Math.round(t.f/s)+'f</b>';}
-function saveRecipe(){var nm=(_recipeDraft.name||'').trim();if(!nm){flash('Name the recipe.');return;}if(!_recipeDraft.ing.length){flash('Add an ingredient first.');return;}var t=recipeTotals(),s=_recipeDraft.servings||1;var per={kcal:Math.round(t.kcal/s),p:r1(t.p/s),c:r1(t.c/s),f:r1(t.f/s),fib:r1(t.fib/s),sug:r1(t.sug/s),sod:Math.round(t.sod/s),pot:Math.round(t.pot/s),iron:r1(t.iron/s),mag:Math.round(t.mag/s)};if(_recipeDraft.editId){var r=recipeById(_recipeDraft.editId);if(r){r.name=nm;r.servings=s;r.ing=_recipeDraft.ing;r.per=per;r.meals=_recipeDraft.meals;r.phases=_recipeDraft.phases;r.note=_recipeDraft.note;}persist();closeCreate();flash('Recipe updated.');if(typeof renderKitchen==='function')renderKitchen();openRecipe(_recipeDraft.editId);return;}var nr={id:'r_'+Date.now(),name:nm,servings:s,ing:_recipeDraft.ing,per:per,meals:_recipeDraft.meals,phases:_recipeDraft.phases,note:_recipeDraft.note};S.recipes.push(nr);persist();closeCreate();flash('Recipe saved.');if(typeof renderKitchen==='function')renderKitchen();openRecipe(nr.id);}
+function saveRecipe(){var nm=(_recipeDraft.name||'').trim();if(!nm){flash('Name the recipe.');return;}if(!_recipeDraft.ing.length){flash('Add an ingredient first.');return;}var t=recipeTotals(),s=_recipeDraft.servings||1;var per={kcal:Math.round(t.kcal/s),p:r1(t.p/s),c:r1(t.c/s),f:r1(t.f/s),fib:r1(t.fib/s),sug:r1(t.sug/s),sod:Math.round(t.sod/s),pot:Math.round(t.pot/s),iron:r1(t.iron/s),mag:Math.round(t.mag/s)};if(_recipeDraft.editId){var r=recipeById(_recipeDraft.editId);if(r){r.name=nm;r.servings=s;r.ing=_recipeDraft.ing;r.per=per;r.meals=_recipeDraft.meals;r.phases=_recipeDraft.phases;r.note=_recipeDraft.note;r.easy=_recipeDraft.easy;}persist();closeCreate();flash('Recipe updated.');if(typeof renderKitchen==='function')renderKitchen();openRecipe(_recipeDraft.editId);return;}var nr={id:'r_'+Date.now(),name:nm,servings:s,ing:_recipeDraft.ing,per:per,meals:_recipeDraft.meals,phases:_recipeDraft.phases,note:_recipeDraft.note,easy:_recipeDraft.easy};S.recipes.push(nr);persist();closeCreate();flash('Recipe saved.');if(typeof renderKitchen==='function')renderKitchen();openRecipe(nr.id);}
 
 /* ---- barcode scan (lazy ZXing, online only) ---- */
 function loadZXing(cb){if(window.ZXingBrowser){cb(true);return;}var sc=document.createElement('script');sc.src='https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js';sc.onload=function(){cb(!!window.ZXingBrowser);};sc.onerror=function(){cb(false);};document.head.appendChild(sc);}
@@ -1255,7 +1306,7 @@ function renderTend(){
     return '<div class="chk'+(d?' done':'')+'" onclick="toggleRite(\''+r.id+'\')"><div class="box">'+(d?'✓':'')+'</div><div class="ct">'+r.t+'</div></div>';
   }).join('');
 }
-function toggleSupp(id){var k=todayKey();if(!S.supps[k])S.supps[k]={};S.supps[k][id]=!S.supps[k][id];persist();renderTend();renderToday();}
+function toggleSupp(id){var k=todayKey();if(!S.supps[k])S.supps[k]={};S.supps[k][id]=!S.supps[k][id];if(id==='unithroid'){if(S.supps[k][id])S.supps[k].unithroidAt=Date.now();else delete S.supps[k].unithroidAt;}persist();renderTend();renderToday();}
 function toggleRite(id){var k=riteKey();if(!S.rites[k])S.rites[k]={};S.rites[k][id]=!S.rites[k][id];persist();renderTend();}
 function addCount(){
   var t=document.getElementById('countText').value.trim();if(!t)return;
@@ -1302,7 +1353,7 @@ document.querySelectorAll('nav.tabs button').forEach(function(b){
     window.scrollTo(0,0);
   };
 });
-try{migrateMeals();seedRecipes();normalizeRecipes();persist();}catch(e){}
+try{normalizeFoods();migrateMeals();seedRecipes();normalizeRecipes();persist();}catch(e){}
 renderAll();
 
 /* register service worker for offline (only works over https / GitHub Pages — fails silently elsewhere) */
