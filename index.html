@@ -607,7 +607,7 @@ var defaults={
 };
 var S=Object.assign({},defaults,JSON.parse(localStorage.getItem(EKEY)||'{}'));
 if(!S.favorites||!S.favorites.length)S.favorites=FAV_SEED.slice();
-if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.cycleLog)S.cycleLog={}; if(!S.alchemyLog)S.alchemyLog={}; if(!S.substances||!S.substances.length)S.substances=[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}]; if(!S.protocol)S.protocol={active:false,start:null,end:null,days:{}}; if(!S.protocol.days)S.protocol.days={};
+if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.cycleLog)S.cycleLog={}; if(!S.alchemyLog)S.alchemyLog={}; if(!S.substances||!S.substances.length)S.substances=[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}]; if(!S.protocol)S.protocol={active:false,start:null,end:null,days:{}}; if(!S.protocol.days)S.protocol.days={}; Object.keys(S.protocol.days).forEach(function(dk){if(Array.isArray(S.protocol.days[dk])){var o={};S.protocol.days[dk].forEach(function(id){o[id]='';});S.protocol.days[dk]=o;}});
 function persist(){try{localStorage.setItem(EKEY,JSON.stringify(S));}catch(e){}}
 
 /* ============ cycle ============ */
@@ -1565,49 +1565,59 @@ function doUndo(){if(_undo){_undo();_undo=null;flash('Undone.');}}
 /* ===== ALCHEMY (substance tracker) ===== */
 function alchDay(dk){if(!S.alchemyLog[dk])S.alchemyLog[dk]={items:{},note:''};if(!S.alchemyLog[dk].items)S.alchemyLog[dk].items={};return S.alchemyLog[dk];}
 function subById(id){return (S.substances||[]).filter(function(x){return x.id===id;})[0];}
-function protocolToday(){var pr=S.protocol;if(!pr||!pr.active)return null;var t=todayKey();if(pr.start&&t<pr.start)return null;if(pr.end&&t>pr.end)return null;return (pr.days&&pr.days[t])||[];}
-function toggleAlch(id){var a=alchDay(todayKey());if(a.items[id])delete a.items[id];else a.items[id]={t:nowTime()};persist();renderAlchemy();}
+function protocolToday(){var pr=S.protocol;if(!pr||!pr.active)return null;var t=todayKey();if(pr.start&&t<pr.start)return null;if(pr.end&&t>pr.end)return null;return Object.keys((pr.days&&pr.days[t])||{});}
+function toggleAlch(id){var a=alchDay(todayKey());if(a.items[id])delete a.items[id];else a.items[id]={t:nowTime(),dose:(protoDosesToday()[id]||'')};persist();renderAlchemy();}
 function setAlchNote(v){alchDay(todayKey()).note=v;persist();}
+function setAlchDose(id,v){var a=alchDay(todayKey());if(a.items[id])a.items[id].dose=v;persist();}
+function protoDosesToday(){var pr=S.protocol;if(!pr||!pr.active)return {};var t=todayKey();if(pr.start&&t<pr.start)return {};if(pr.end&&t>pr.end)return {};return (pr.days&&pr.days[t])||{};}
+function protocolAdherence(){var pr=S.protocol;if(!pr||!pr.active||!pr.start)return null;var end=(pr.end&&pr.end<todayKey())?pr.end:todayKey();var list=[],d=pr.start;var guard=0;while(d<=end&&guard<400){list.push(d);d=shiftDateKey(d,1);guard++;}var adhered=0,streak=0;function sig(dk){var sched=Object.keys((pr.days[dk]||{})).sort().join(',');var act=Object.keys(((S.alchemyLog[dk]||{}).items)||{}).sort().join(',');return sched===act;}list.forEach(function(dk){if(sig(dk))adhered++;});for(var i=list.length-1;i>=0;i--){if(sig(list[i]))streak++;else break;}return {adhered:adhered,total:list.length,streak:streak};}
 function renderAlchemy(){
   var host=document.getElementById('alchToggles');if(!host)return;
-  var a=alchDay(todayKey()),sched=protocolToday(),pl=document.getElementById('alchProtoLine');
-  if(sched===null){pl.innerHTML='No protocol running. Tap ⚗ Protocol to set a cycle.';}
+  var a=alchDay(todayKey()),sched=protocolToday(),doses=protoDosesToday(),pl=document.getElementById('alchProtoLine');
+  if(sched===null){pl.innerHTML='No protocol running — log freely below. Tap ⚗ Protocol to set one.';}
   else if(!sched.length){pl.innerHTML='<b style="color:var(--moonlight)">Today: off day</b> — rest from substances';}
-  else{pl.innerHTML='<b style="color:var(--candle)">Today’s protocol:</b> '+sched.map(function(id){var x=subById(id);return x?x.emoji+' '+x.name:id;}).join(' · ');}
-  host.innerHTML=(S.substances||[]).map(function(x){var done=!!a.items[x.id],isS=sched&&sched.indexOf(x.id)>=0;
-    return '<span class="chip" style="'+(done?'border-color:var(--candle);background:rgba(232,185,106,.15)':'')+'" onclick="toggleAlch(\''+x.id+'\')">'+x.emoji+' '+x.name+(done?' ✓':(isS?' <span style="color:var(--candle)">·due</span>':''))+'</span>';
+  else{pl.innerHTML='<b style="color:var(--candle)">Today’s protocol:</b> '+sched.map(function(id){var x=subById(id);return (x?x.emoji+' '+x.name:id)+(doses[id]?' ('+doses[id]+')':'');}).join(' · ');}
+  var adh=protocolAdherence();
+  if(adh&&adh.total){pl.innerHTML+='<div class="tiny" style="margin-top:5px;color:var(--muted)">Adherence '+adh.adhered+'/'+adh.total+' days'+(adh.streak>1?' · 🔥 '+adh.streak+'-day streak':'')+'</div>';}
+  host.innerHTML=(S.substances||[]).map(function(x){var it=a.items[x.id],done=!!it,isS=sched&&sched.indexOf(x.id)>=0;
+    return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="chip" style="flex:0 0 auto;'+(done?'border-color:var(--candle);background:rgba(232,185,106,.15)':'')+'" onclick="toggleAlch(\''+x.id+'\')">'+x.emoji+' '+x.name+(done?' ✓':(isS?' <span style="color:var(--candle)">·due</span>':''))+'</span>'+(done?'<input style="flex:1;min-width:0" value="'+esc(it.dose||'')+'" oninput="setAlchDose(\''+x.id+'\',this.value)" placeholder="dose · 2 hits · 0.2g · 100mg">':'')+'</div>';
   }).join('')||'<div class="note">No substances yet. Tap ＋ Substances.</div>';
   var n=document.getElementById('alchNote');if(n&&document.activeElement!==n)n.value=a.note||'';
 }
 /* protocol */
 function openProtocol(){renderProtocol();showEl('alchProtoSheet');}
 function closeProtocol(){hideEl('alchProtoSheet');renderAlchemy();}
-var _protoBrush=null,_protoAnchor=null;
+var _protoBrush=null,_protoAnchor=null,_brushDose='';
 function renderProtocol(){var pr=S.protocol;if(!pr.days)pr.days={};
   if(!_protoBrush&&S.substances&&S.substances.length)_protoBrush=S.substances[0].id;
   if(!_protoAnchor)_protoAnchor=pr.start||todayKey();
   var b=document.getElementById('alchProtoBody');
-  var h='<div class="sub">Pick a substance, then tap the days you’ll take it. Tap a day again to turn it off. Build each substance’s schedule right on the calendar.</div>';
+  var h='<div class="sub">Pick a substance, set an optional dose, then tap the days you’ll take it. Tap a day again to turn it off. Fine-tune any day’s dose in the list below.</div>';
   h+='<div class="toggle'+(pr.active?' on':'')+'" onclick="toggleProtoActive()"><div class="sw"></div><div>Protocol active</div></div>';
   h+='<div class="svrow" style="margin-top:8px"><div><label class="fl">Start</label><input type="date" value="'+(pr.start||'')+'" onchange="setProtoStart(this.value)"></div><div><label class="fl">End</label><input type="date" value="'+(pr.end||'')+'" onchange="setProtoEnd(this.value)"></div></div>';
   h+='<div style="margin-top:12px"><label class="fl">Painting</label><div class="mealpick" style="flex-wrap:wrap">'+(S.substances||[]).map(function(x){return '<button class="'+(_protoBrush===x.id?'on':'')+'" onclick="setProtoBrush(\''+x.id+'\')">'+x.emoji+' '+x.name+'</button>';}).join('')+'</div></div>';
+  h+='<div style="margin-top:8px"><label class="fl">Dose to paint (optional)</label><input value="'+esc(_brushDose||'')+'" oninput="setBrushDose(this.value)" placeholder="2 hits · 0.2g · 100mg"></div>';
   var a=new Date(_protoAnchor+'T00:00:00'),y=a.getFullYear(),m=a.getMonth();
   h+='<div class="monthnav" style="margin-top:14px"><button onclick="protoShift(-1)">‹</button><div class="mt">'+a.toLocaleDateString(undefined,{month:'long',year:'numeric'})+'</div><button onclick="protoShift(1)">›</button></div>';
   h+='<div class="mwk"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>';
   var first=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate(),tk=todayKey(),grid='';
   for(var i=0;i<first;i++)grid+='<div class="mcell empty"></div>';
-  for(var d=1;d<=dim;d++){var dk=dkOf(y,m,d),ids=(pr.days[dk]||[]),em=ids.map(function(id){var x=subById(id);return x?x.emoji:'•';}).join(''),hasBrush=ids.indexOf(_protoBrush)>=0,inRange=(!pr.start||dk>=pr.start)&&(!pr.end||dk<=pr.end);
+  for(var d=1;d<=dim;d++){var dk=dkOf(y,m,d),ids=Object.keys(pr.days[dk]||{}),em=ids.map(function(id){var x=subById(id);return x?x.emoji:'•';}).join(''),hasBrush=ids.indexOf(_protoBrush)>=0,inRange=(!pr.start||dk>=pr.start)&&(!pr.end||dk<=pr.end);
     grid+='<div class="mcell'+(dk===tk?' today':'')+'" style="'+(hasBrush?'box-shadow:0 0 0 2px var(--candle) inset;':'')+(inRange?'':'opacity:.4;')+'" onclick="toggleProtoDaySub(\''+dk+'\')"><div class="dn">'+d+'</div>'+(em?'<div style="font-size:11px;line-height:1;margin-top:1px">'+em+'</div>':'')+'</div>';}
   h+='<div class="monthgrid">'+grid+'</div>';
-  h+='<div class="note" style="margin-top:10px">Days outside your start–end are dimmed. The gold outline = where your selected substance is on.</div>';
-  h+='<button class="act" style="width:100%;margin-top:12px" onclick="closeProtocol()">Done</button>';
+  h+='<div class="note" style="margin-top:10px">Dimmed = outside your start–end. Gold outline = your selected substance is on that day.</div>';
+  var sdays=Object.keys(pr.days).filter(function(dk){return Object.keys(pr.days[dk]).length&&(!pr.start||dk>=pr.start)&&(!pr.end||dk<=pr.end);}).sort();
+  if(sdays.length){h+='<div class="ksec">Per-day doses</div>'+sdays.map(function(dk){var day=pr.days[dk];return '<div style="margin-bottom:10px;border-top:1px solid var(--line);padding-top:8px"><div class="tiny muted">'+dateLabel(dk)+' · '+dateSub(dk)+'</div>'+Object.keys(day).map(function(id){var x=subById(id);return '<div style="display:flex;gap:8px;align-items:center;margin-top:5px"><span style="flex:0 0 auto">'+(x?x.emoji+' '+x.name:id)+'</span><input style="flex:1;min-width:0" value="'+esc(day[id])+'" oninput="setProtoDose(\''+dk+'\',\''+id+'\',this.value)" placeholder="dose"></div>';}).join('')+'</div>';}).join('');}
+  h+='<button class="act" style="width:100%;margin-top:14px" onclick="closeProtocol()">Done</button>';
   b.innerHTML=h;
 }
 function setProtoStart(v){S.protocol.start=v||null;if(v)_protoAnchor=v;persist();renderProtocol();}
 function setProtoEnd(v){S.protocol.end=v||null;persist();renderProtocol();}
 function setProtoBrush(id){_protoBrush=id;renderProtocol();}
+function setBrushDose(v){_brushDose=v;}
+function setProtoDose(dk,id,v){if(S.protocol.days[dk]&&S.protocol.days[dk][id]!=null)S.protocol.days[dk][id]=v;persist();}
 function protoShift(d){var a=new Date((_protoAnchor||todayKey())+'T00:00:00');a.setDate(1);a.setMonth(a.getMonth()+d);_protoAnchor=dkOf(a.getFullYear(),a.getMonth(),1);renderProtocol();}
-function toggleProtoDaySub(dk){if(!_protoBrush)return;var pr=S.protocol;if(!pr.days)pr.days={};var arr=pr.days[dk]||[],i=arr.indexOf(_protoBrush);if(i>=0)arr.splice(i,1);else arr.push(_protoBrush);if(arr.length)pr.days[dk]=arr;else delete pr.days[dk];persist();renderProtocol();}
+function toggleProtoDaySub(dk){if(!_protoBrush)return;var pr=S.protocol;if(!pr.days)pr.days={};var day=pr.days[dk]||{};if(day[_protoBrush]!=null)delete day[_protoBrush];else day[_protoBrush]=_brushDose||'';if(Object.keys(day).length)pr.days[dk]=day;else delete pr.days[dk];persist();renderProtocol();}
 function toggleProtoActive(){S.protocol.active=!S.protocol.active;persist();renderProtocol();}
 /* manage substances */
 function openAlchManage(){renderAlchManage();showEl('alchManageSheet');}
