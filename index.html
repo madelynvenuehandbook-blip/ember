@@ -347,6 +347,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       </div>
       <div style="text-align:center;margin-top:12px">
         <button class="ghost" onclick="addWater(-250)">undo a cup</button>
+        <button class="ghost" onclick="undoLastInput()" id="undoLastBtn">undo last input</button>
       </div>
       <div class="note" id="waterWhy"></div>
     </div>
@@ -962,7 +963,8 @@ function renderWater(){
   document.getElementById('lyteCount').textContent=w.lyte||0;
   document.getElementById('lyteWhy').textContent=(ci.phase.key==='ovulation'||ci.phase.key==='menstrual')?'Load heavier today — this is a high-autonomic phase. Buoy in juice 2–3x, fasting salts on hard days.':'Buoy in juice through the day keeps your volume up.';
 }
-function addWater(ml){var k=todayKey();var w=S.hydration[k]||{ml:0,lyte:0};w.ml=Math.max(0,w.ml+ml);w.goal=waterGoal();S.hydration[k]=w;persist();renderWater();renderToday();}
+function addWater(ml){var k=todayKey();var w=S.hydration[k]||{ml:0,lyte:0};if(!w.log)w.log=[];if(ml>0)w.log.push(ml);w.ml=Math.max(0,w.ml+ml);w.goal=waterGoal();S.hydration[k]=w;persist();renderWater();renderToday();}
+function undoLastInput(){var k=todayKey();var w=S.hydration[k];if(!w||!w.log||!w.log.length){flash('Nothing to undo.');return;}var last=w.log.pop();w.ml=Math.max(0,w.ml-last);persist();renderWater();renderToday();flash('Undid last input (-'+last+' ml).');}
 function addCustomWater(){var v=prompt('How many ml?');if(v&&!isNaN(v))addWater(parseInt(v,10));}
 function addLyte(n){var k=todayKey();var w=S.hydration[k]||{ml:0,lyte:0};w.lyte=Math.max(0,(w.lyte||0)+n);S.hydration[k]=w;persist();renderWater();renderToday();}
 
