@@ -438,7 +438,6 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       <h3>This phase</h3>
       <div class="guide" id="phaseGuide"></div>
     </div>
-    <div class="card" style="border-style:dashed" id="cycNote"><div class="note" style="margin:0">Mark period days in <b style="color:var(--moonlight)">Visible</b> too if you like — but here is where your body's full story lives. Predictions sharpen every time you log.</div></div>
   </div>
 
   <!-- ============ TEND ============ -->
@@ -462,6 +461,12 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       <div id="suppList"></div>
     </div>
 
+    <div class="card">
+      <h3>Daily rites</h3>
+      <div class="sub">Tick what you tended today. Not a scorecard, a practice.</div>
+      <div id="ritesList"></div>
+    </div>
+
     <div class="card" id="alchemyCard">
       <h3>🜍 Alchemy <span class="muted tiny">· what you take, and when</span></h3>
       <div class="sub" id="alchProtoLine"></div>
@@ -473,15 +478,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
         <button class="ghost" onclick="openAlchManage()">＋ Substances</button>
       </div>
     </div>
-
-    <div class="card">
-      <h3>Daily rites</h3>
-      <div class="sub">Tick what you tended today. Not a scorecard, a practice.</div>
-      <div id="ritesList"></div>
-    </div>
   </div>
-
-</div>
 
   <!-- ============ KITCHEN ============ -->
   <div class="page" id="pg-kitchen">
@@ -490,6 +487,8 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
     <div class="ktabs"><button id="km_eat" onclick="setKMode('eat')">What to eat</button><button id="km_book" onclick="setKMode('book')">Recipe book</button></div>
     <div id="kitchenBody"></div>
   </div>
+
+</div>
 
 <div class="backdrop" id="backdrop" onclick="closeServ()"></div>
 
@@ -985,9 +984,9 @@ function renderHeader(){
 
 function renderToday(){
   var ci=cycleInfo(),tg=targets(),tot=macroTotals(),w=todayWater(),wg=waterGoal();
-  document.getElementById('betterLine').textContent=todaysQuote();var _sc=stabilityScore(todayKey()),_fl=flameLabel(_sc),_tf=document.getElementById('todayFlame');if(_tf)_tf.innerHTML=(_sc!=null?'<div style="font-family:var(--temple);font-size:30px;color:'+_fl[1]+';line-height:1">'+_sc+'</div><div class="tiny" style="color:'+_fl[1]+'">'+_fl[0]+'</div>':'<div style="font-size:28px;color:var(--candle)">›</div>');var _tcs=document.getElementById('todayCheckinSub');if(_tcs)_tcs.textContent=(_sc!=null?'your flame today · tap to update':'tap to check in — sleep, symptoms, exertion');
-  document.getElementById('todayWaterRing').innerHTML=ring(w.ml/wg,(w.ml/1000).toFixed(1)+'L','water',(wg/1000).toFixed(1)+'L goal','#5FA8D3',132);
-  document.getElementById('todayProteinRing').innerHTML=ring(tot.p/tg.p,Math.round(tot.p),'protein',tg.p+'g goal','#4FB68C',132);
+  document.getElementById('betterLine').textContent=todaysQuote();var _ff=flameForToday(),_fl=flameLabel(_ff.sc),_tf=document.getElementById('todayFlame');if(_tf)_tf.innerHTML=(_ff.sc!=null?'<div style="font-family:var(--temple);font-size:30px;color:'+_fl[1]+';line-height:1">'+_ff.sc+'</div><div class="tiny" style="color:'+_fl[1]+'">'+_fl[0]+'</div>':'<div style="font-size:28px;color:var(--candle)">›</div>');var _tcs=document.getElementById('todayCheckinSub');if(_tcs)_tcs.textContent=(_ff.mode==='today'?'your flame today · tap to update':(_ff.mode==='morning'?'this morning · from yesterday + your sleep · pace today':'tap to check in — sleep, symptoms, exertion'));
+  document.getElementById('todayWaterRing').innerHTML=ring(w.ml/wg,(w.ml/1000).toFixed(1)+'L','water',(wg/1000).toFixed(1)+'L goal','#5FA8D3',156);
+  document.getElementById('todayProteinRing').innerHTML=ring(tot.p/tg.p,Math.round(tot.p),'protein',tg.p+'g goal','#4FB68C',156);
   document.getElementById('todayMacroMini').innerHTML=
     mbar('Calories',tot.kcal,tg.kcal,'linear-gradient(90deg,var(--ember),var(--candle))')+
     mbar('Carbs',tot.c,tg.c,'#C9A24B')+mbar('Fat',tot.f,tg.f,'#B98A6A');
@@ -1099,8 +1098,8 @@ function renderMeals(){
   var ds=document.getElementById('dSub'); if(ds){ds.textContent=hasCycle()?dateSub(dk)+' · Day '+vp.day+' · '+vp.phase.name:dateSub(dk);ds.style.color=hasCycle()?vp.phase.color:'var(--muted)';}
   var mdi=document.getElementById('mealDate'); if(mdi)mdi.value=dk;
   var dt=document.getElementById('dToday'); if(dt)dt.innerHTML=(dk!==todayKey())?'<button class="ghost" onclick="mealsToday()">↩ jump back to today</button>':'';
-  document.getElementById('calRing').innerHTML=ring(tot.kcal/tg.kcal,(calLeft>=0?calLeft:'+'+(-calLeft)),(calLeft>=0?'cal left':'cal over'),Math.round(tg.kcal)+' goal','#E0743C',128);
-  document.getElementById('protRing2').innerHTML=ring(tot.p/tg.p,Math.round(tot.p),'protein',tg.p+'g goal','#4FB68C',128);
+  document.getElementById('calRing').innerHTML=ring(tot.kcal/tg.kcal,(calLeft>=0?calLeft:'+'+(-calLeft)),(calLeft>=0?'cal left':'cal over'),Math.round(tg.kcal)+' goal','#E0743C',156);
+  document.getElementById('protRing2').innerHTML=ring(tot.p/tg.p,Math.round(tot.p),'protein',tg.p+'g goal','#4FB68C',156);
   document.getElementById('calEqn').innerHTML='Goal <b>'+Math.round(tg.kcal)+'</b> − Food <b>'+Math.round(tot.kcal)+'</b> = <b>'+calLeft+'</b> left';
   var _no=nourish(dk),_np=[];if(_no.protein)_np.push('protein ✓');if(_no.colors)_np.push(_no.colors+' color'+(_no.colors>1?'s':''));if(_no.omega3)_np.push('omega-3 ✓');if(_no.fiber)_np.push('fiber ✓');document.getElementById('macroRings').innerHTML='<div class="note" style="color:var(--green);margin:0 0 12px">Nourishment ✨ '+(_np.length?_np.join(' · '):'log a meal to begin')+'</div>'+mbar('Protein · your priority',tot.p,tg.p,'var(--green)')+mbar('Carbs',tot.c,tg.c,'#C9A24B')+mbar('Fat',tot.f,tg.f,'#B98A6A');
   var _hist=dayHist(flatDay(dk)),_hl=histLabel(_hist.load,isReactivePhase(dk));
@@ -1597,6 +1596,7 @@ function trackedSyms(){return S.trackedSyms&&S.trackedSyms.length?S.trackedSyms:
 function trackedEvents(){return S.trackedEvents&&S.trackedEvents.length?S.trackedEvents:DEFAULT_EVENTS;}
 function stabilityScore(dk){var cl=S.cycleLog[dk];if(!cl)return null;var sym=cl.sym||{},burden=0,has=false;Object.keys(sym).forEach(function(k){var v=sym[k];if(typeof v==='number'){burden+=v;has=true;}});var ex=cl.exertion||{},exsum=(ex.p||0)+(ex.m||0)+(ex.e||0)+(ex.s||0);var slq=(cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;if(!has&&!exsum&&slq==null)return null;var score=100-burden*4-exsum*2+(slq!=null?(slq-1.5)*4:0);return Math.max(0,Math.min(100,Math.round(score)));}
 function flameLabel(sc){if(sc==null)return ['—','var(--muted)'];if(sc>=80)return ['Burning bright','#4FB68C'];if(sc>=60)return ['Steady','#6FA88C'];if(sc>=40)return ['Low','#E8B96A'];if(sc>=25)return ['Flickering','#E0743C'];return ['Embers','#9B5C6E'];}
+function flameForToday(){var tk=todayKey(),cl=S.cycleLog[tk]||{};var exsum=cl.exertion?((cl.exertion.p||0)+(cl.exertion.m||0)+(cl.exertion.e||0)+(cl.exertion.s||0)):0;var hasToday=(cl.sym&&Object.keys(cl.sym).length>0)||exsum>0;if(hasToday)return {sc:stabilityScore(tk),mode:'today'};var ysc=stabilityScore(shiftDateKey(tk,-1));if(ysc==null)return {sc:null,mode:'none'};var slq=(cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;var adj=slq!=null?(slq-1.5)*6:0;return {sc:Math.max(0,Math.min(100,Math.round(ysc+adj))),mode:'morning'};}
 var SCIENCE={
  menstrual:'Estrogen + progesterone are at their floor; prostaglandins (the cramping chemicals) peak, constricting vessels and triggering contractions. You lose ~15–30mg of iron with the bleed, pain perception runs high, and your data shows this is your worst crash + fog window. Your body is in active repair — rest is the strategy, not lost time.',
  follicular:'Estrogen rises fast, building energy and new brain connections. Insulin sensitivity is high (you use carbs efficiently) and estrogen strengthens your skin barrier + collagen. This is your steadiest, strongest window — best HRV + stability. Front-load the hard things here.',
