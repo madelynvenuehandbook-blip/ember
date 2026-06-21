@@ -445,6 +445,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
   <div class="page" id="pg-tend">
     <div class="eyebrow">Keep the fire</div>
     <div class="pagetitle">Tend</div>
+    <div class="sub">Feeding the mind + the becoming — your routines, your habits, the woman you're growing into. (Your body lives in Cycle.)</div>
 
     <div class="card">
       <h3>Today's stack</h3>
@@ -1613,18 +1614,15 @@ function renderTend(){
   document.getElementById('suppSub').textContent='Your real schedule'+(cycleInfo().phase.key==='ovulation'?' — histamine layer added for ovulation.':cycleInfo().phase.key==='menstrual'?' — iron + energy emphasis for menstrual.':'.');
   document.getElementById('suppList').innerHTML=sched.map(function(s){
     var d=!!done[s.id];
-    return '<div class="chk'+(d?' done':'')+'" onclick="toggleSupp(\''+s.id+'\')"><div class="box">'+(d?'✓':'')+'</div><div class="ct"><span class="when">'+s.when+'</span>'+s.name+(s.phase?'<span class="tag phase">phase</span>':'')+(s.hist?'<span class="tag hist">histamine</span>':'')+'<span class="nt">'+s.nt+'</span></div></div>';
+    return '<div class="chk'+(d?' done':'')+'" onclick="toggleSupp(\''+s.id+'\')"><div class="box">'+(d?'✓':'')+'</div><div class="ct"><span class="when">'+s.when+'</span>'+s.name+(s.phase?'<span class="tag phase">phase</span>':'')+(s.hist?'<span class="tag hist">histamine</span>':'')+(typeof done[s.id]==='string'?'<span class="tag" style="background:rgba(79,182,140,.18);color:#4FB68C">'+done[s.id]+'</span>':'')+'<span class="nt">'+s.nt+'</span></div></div>';
   }).join('');
   document.getElementById('dailyQ').textContent=todaysQ();
   var cs=(S.counts||[]).filter(function(x){return x.date===new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'});});
   document.getElementById('countList').innerHTML=(S.counts||[]).slice(-4).reverse().map(function(x){return '<div class="logrow"><div><div class="tiny muted">'+x.date+'</div>'+x.text+'</div></div>';}).join('');
   var rdone=S.rites[riteKey()]||{};
-  document.getElementById('ritesList').innerHTML=RITES.map(function(r){
-    var d=!!rdone[r.id];
-    return '<div class="chk'+(d?' done':'')+'" onclick="toggleRite(\''+r.id+'\')"><div class="box">'+(d?'✓':'')+'</div><div class="ct">'+r.t+'</div></div>';
-  }).join('');
+  document.getElementById('ritesList').innerHTML='<div class="tags">'+RITES.map(function(r){var d=!!rdone[r.id];return '<button class="'+(d?'on':'')+'" onclick="toggleRite(\''+r.id+'\')">'+r.t+'</button>';}).join('')+'</div>';
 }
-function toggleSupp(id){var k=todayKey();if(!S.supps[k])S.supps[k]={};S.supps[k][id]=!S.supps[k][id];if(id==='unithroid'){if(S.supps[k][id])S.supps[k].unithroidAt=Date.now();else delete S.supps[k].unithroidAt;}persist();renderTend();renderToday();}
+function toggleSupp(id){var k=todayKey();if(!S.supps[k])S.supps[k]={};if(S.supps[k][id]){delete S.supps[k][id];if(id==='unithroid')delete S.supps[k].unithroidAt;}else{S.supps[k][id]=nowTime();if(id==='unithroid')S.supps[k].unithroidAt=Date.now();}persist();renderTend();renderToday();}
 function toggleRite(id){var k=riteKey();if(!S.rites[k])S.rites[k]={};S.rites[k][id]=!S.rites[k][id];persist();renderTend();}
 function addCount(){
   var t=document.getElementById('countText').value.trim();if(!t)return;
@@ -1677,9 +1675,12 @@ function renderAlchemy(){
   else{pl.innerHTML='<b style="color:var(--candle)">Today’s protocol:</b> '+sched.map(function(id){var x=subById(id);return (x?x.emoji+' '+x.name:id)+(doses[id]?' ('+doses[id]+')':'');}).join(' · ');}
   var adh=protocolAdherence();
   if(adh&&adh.total){pl.innerHTML+='<div class="tiny" style="margin-top:5px;color:var(--muted)">Adherence '+adh.adhered+'/'+adh.total+' days'+(adh.streak>1?' · 🔥 '+adh.streak+'-day streak':'')+'</div>';}
-  host.innerHTML=(S.substances||[]).map(function(x){var it=a.items[x.id],done=!!it,isS=sched&&sched.indexOf(x.id)>=0;
-    return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="chip" style="flex:0 0 auto;'+(done?'border-color:var(--candle);background:rgba(232,185,106,.15)':'')+'" onclick="toggleAlch(\''+x.id+'\')">'+x.emoji+' '+x.name+(done?' ✓':(isS?' <span style="color:var(--candle)">·due</span>':''))+'</span>'+(done?'<input style="flex:1;min-width:0" value="'+esc(it.dose||'')+'" oninput="setAlchDose(\''+x.id+'\',this.value)" placeholder="dose · 2 hits · 0.2g · 100mg">':'')+'</div>';
-  }).join('')||'<div class="note">No substances yet. Tap ＋ Substances.</div>';
+  if(!(S.substances&&S.substances.length)){host.innerHTML='<div class="note">No substances yet. Tap ＋ Substances.</div>';}
+  else{
+    var chips='<div class="tags">'+S.substances.map(function(x){var done=!!a.items[x.id],isS=sched&&sched.indexOf(x.id)>=0;return '<button class="'+(done?'on':'')+'" onclick="toggleAlch(\''+x.id+'\')">'+x.emoji+' '+x.name+(done?' ✓':(isS?' ·due':''))+'</button>';}).join('')+'</div>';
+    var doses=S.substances.filter(function(x){return a.items[x.id];}).map(function(x){var it=a.items[x.id];return '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><span style="flex:0 0 auto">'+x.emoji+' '+x.name+'</span><input style="flex:1;min-width:0" value="'+esc(it.dose||'')+'" oninput="setAlchDose(\''+x.id+'\',this.value)" placeholder="dose · 2 hits · 0.2g · 100mg"></div>';}).join('');
+    host.innerHTML=chips+doses;
+  }
   var n=document.getElementById('alchNote');if(n&&document.activeElement!==n)n.value=a.note||'';
 }
 /* protocol */
