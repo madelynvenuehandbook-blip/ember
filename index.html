@@ -361,6 +361,13 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       </div>
       <div class="note" id="lyteWhy"></div>
     </div>
+    <div class="card">
+      <h3>Drinks <span class="muted tiny">· not food — tea, coffee, milk</span></h3>
+      <div class="sub" id="caffLine"></div>
+      <div id="drinkChips"></div>
+      <div id="drinkLog" style="margin-top:6px"></div>
+      <div style="margin-top:8px"><button class="ghost" onclick="addCustomDrink()">＋ custom drink</button></div>
+    </div>
   </div>
 
   <!-- ============ MEALS ============ -->
@@ -602,12 +609,12 @@ var FAV_SEED=[
 ];
 var defaults={
   lastPeriodStart:'2026-05-23', cycleLength:29, cycleUpdatedAt:0,
-  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, cycleMode:'C', alchemyLog:{}, substances:[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}], protocol:{active:false,start:null,end:null,days:{}}, symptoms:{}, supps:{}, counts:[], rites:{},
+  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, cycleMode:'C', drinksLog:{}, drinkTypes:[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}], alchemyLog:{}, substances:[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}], protocol:{active:false,start:null,end:null,days:{}}, symptoms:{}, supps:{}, counts:[], rites:{},
   favorites:FAV_SEED.slice(), lastSync:0
 };
 var S=Object.assign({},defaults,JSON.parse(localStorage.getItem(EKEY)||'{}'));
 if(!S.favorites||!S.favorites.length)S.favorites=FAV_SEED.slice();
-if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.cycleLog)S.cycleLog={}; if(!S.alchemyLog)S.alchemyLog={}; if(!S.substances||!S.substances.length)S.substances=[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}]; if(!S.protocol)S.protocol={active:false,start:null,end:null,days:{}}; if(!S.protocol.days)S.protocol.days={}; Object.keys(S.protocol.days).forEach(function(dk){if(Array.isArray(S.protocol.days[dk])){var o={};S.protocol.days[dk].forEach(function(id){o[id]='';});S.protocol.days[dk]=o;}});
+if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.cycleLog)S.cycleLog={}; if(!S.alchemyLog)S.alchemyLog={}; if(!S.drinksLog)S.drinksLog={}; if(!S.drinkTypes||!S.drinkTypes.length)S.drinkTypes=[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}]; if(!S.substances||!S.substances.length)S.substances=[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}]; if(!S.protocol)S.protocol={active:false,start:null,end:null,days:{}}; if(!S.protocol.days)S.protocol.days={}; Object.keys(S.protocol.days).forEach(function(dk){if(Array.isArray(S.protocol.days[dk])){var o={};S.protocol.days[dk].forEach(function(id){o[id]='';});S.protocol.days[dk]=o;}});
 function persist(){try{localStorage.setItem(EKEY,JSON.stringify(S));}catch(e){}}
 
 /* ============ cycle ============ */
@@ -1007,6 +1014,21 @@ function addWater(ml){var k=todayKey();var w=S.hydration[k]||{ml:0,lyte:0};if(!w
 function undoLastInput(){var k=todayKey();var w=S.hydration[k];if(!w||!w.log||!w.log.length){flash('Nothing to undo.');return;}var last=w.log.pop();w.ml=Math.max(0,w.ml-last);persist();renderWater();renderToday();flash('Undid last input (-'+last+' ml).');}
 function addCustomWater(){var v=prompt('How many ml?');if(v&&!isNaN(v))addWater(parseInt(v,10));}
 function addLyte(n){var k=todayKey();var w=S.hydration[k]||{ml:0,lyte:0};w.lyte=Math.max(0,(w.lyte||0)+n);S.hydration[k]=w;persist();renderWater();renderToday();}
+/* ===== DRINKS (beverages, not food) ===== */
+function drinksDay(dk){if(!S.drinksLog[dk])S.drinksLog[dk]=[];return S.drinksLog[dk];}
+function logDrink(id){var t=(S.drinkTypes||[]).filter(function(x){return x.id===id;})[0];if(!t)return;drinksDay(todayKey()).push({id:t.id,name:t.name,emoji:t.emoji,caf:t.caf||0,t:nowTime()});persist();renderDrinks();}
+function removeDrink(i){drinksDay(todayKey()).splice(i,1);persist();renderDrinks();}
+function dayCaffeine(dk){return (S.drinksLog[dk]||[]).reduce(function(a,d){return a+(d.caf||0);},0);}
+var CAFF_NOTE={menstrual:'Ease off — caffeine is a vasoconstrictor + worsens cramps.',follicular:'Full caffeine is fine — you metabolize it fastest now.',ovulation:'⚠ Half-caf or matcha — your resting HR runs high this week.',luteal:'Taper late luteal — protects blood sugar + magnesium.'};
+function addCustomDrink(){var nm=prompt('Drink name?');if(!nm)return;var caf=prompt('Caffeine mg per serving? (0 if none)','0');S.drinkTypes.push({id:'d_'+Date.now(),name:nm,emoji:'🥤',caf:parseInt(caf,10)||0});persist();renderDrinks();}
+function renderDrinks(){
+  var host=document.getElementById('drinkChips');if(!host)return;
+  host.innerHTML=(S.drinkTypes||[]).map(function(t){return '<span class="chip" onclick="logDrink(\''+t.id+'\')">'+(t.emoji||'🥤')+' '+t.name+(t.caf?' <span class="cm" style="display:inline;color:var(--muted)">'+t.caf+'mg</span>':'')+'</span>';}).join('');
+  var list=drinksDay(todayKey());
+  document.getElementById('drinkLog').innerHTML=list.length?list.map(function(d,i){return '<div class="logrow"><div>'+(d.emoji||'')+' '+d.name+'<span class="macros">'+(d.caf?d.caf+'mg caffeine · ':'')+(d.t||'')+'</span></div><div class="x" onclick="removeDrink('+i+')">×</div></div>';}).join(''):'<div class="note">Tap a drink to log it. (Smoothies stay in Meals — those are food.)</div>';
+  var caf=dayCaffeine(todayKey()),note=hasCycle()?(CAFF_NOTE[cycleInfo().phase.key]||''):'';
+  document.getElementById('caffLine').innerHTML='Caffeine today: <b style="color:var(--candle)">'+caf+' mg</b>'+(note?' · '+note:'');
+}
 
 /* ===== MEALS ENGINE ===== */
 var _meal='breakfast', _tab='all', _servCtx=null, _offResults=[], _searchT=null, _recipeDraft=null;
@@ -1538,7 +1560,7 @@ function addCount(){
 function syncPayload(){
   return {_ember:true,version:1,exportedAt:new Date().toISOString(),
     lastPeriodStart:S.lastPeriodStart,cycleLength:S.cycleLength,cycleUpdatedAt:S.cycleUpdatedAt,
-    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,cycleLog:S.cycleLog,alchemyLog:S.alchemyLog,substances:S.substances,protocol:S.protocol,symptoms:S.symptoms,supps:S.supps,
+    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,cycleLog:S.cycleLog,drinksLog:S.drinksLog,drinkTypes:S.drinkTypes,alchemyLog:S.alchemyLog,substances:S.substances,protocol:S.protocol,symptoms:S.symptoms,supps:S.supps,
     counts:S.counts,rites:S.rites,favorites:S.favorites};
 }
 function syncBlob(){return new Blob([JSON.stringify(syncPayload(),null,0)],{type:'application/json'});}
@@ -1659,7 +1681,7 @@ function alchPatterns(){
   if(!any)out+='<div class="note">Log substances here + your symptoms on the Cycle/Body tab. After a couple weeks, this shows how your energy, flare, mood + sleep compare on days you used vs days you didn’t — your own biological signal.</div>';
   return out;
 }
-function renderAll(){renderHeader();renderToday();renderWater();renderMeals();renderKitchen();renderCycle();renderTend();renderAlchemy();}
+function renderAll(){renderHeader();renderToday();renderWater();renderMeals();renderKitchen();renderCycle();renderTend();renderAlchemy();renderDrinks();}
 document.querySelectorAll('nav.tabs button').forEach(function(b){
   b.onclick=function(){
     document.querySelectorAll('nav.tabs button').forEach(function(x){x.classList.remove('on');});
