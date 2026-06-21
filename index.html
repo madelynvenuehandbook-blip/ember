@@ -198,6 +198,23 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 .datestrip .dlabel{flex:1;text-align:center;cursor:pointer;padding:4px 0}
 .datestrip .dl1{font-family:var(--temple);font-size:20px;color:var(--moon);letter-spacing:.04em}
 .datestrip .dl2{font-size:13px;color:var(--candle);margin-top:3px}
+.ktabs{display:flex;gap:8px;margin-bottom:16px}
+.ktabs button{flex:1;border:1px solid var(--line);background:rgba(236,233,244,.04);color:var(--muted);border-radius:30px;padding:13px;font-size:15px;cursor:pointer}
+.ktabs button.on{background:var(--candle);color:#1a1206;border-color:var(--candle);font-weight:600}
+.kfilters{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.kfilters button{flex:0 0 auto;border:1px solid var(--line);background:rgba(236,233,244,.04);color:var(--muted);border-radius:30px;padding:8px 13px;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.kfilters button.on{background:var(--candle);color:#1a1206;border-color:var(--candle);font-weight:600}
+.rcard{border:1px solid var(--line);border-radius:14px;background:rgba(20,22,48,.4);padding:14px;margin-bottom:10px;cursor:pointer}
+.rcard:active{transform:scale(.99)}
+.rcard .rn{font-family:var(--temple);font-size:17px;color:var(--moon)}
+.rcard .rmac{font-size:13.5px;color:var(--candle);margin-top:4px}
+.rcard .rtags{margin-top:9px}
+.kidea{display:flex;gap:11px;padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(236,233,244,.03);margin-bottom:9px;cursor:pointer}
+.kidea:active{transform:scale(.99)}
+.kidea .ki{font-size:19px;flex:0 0 22px;color:var(--candle)}
+.kidea .kt{font-size:15.5px;color:var(--cream)}
+.kidea .kw{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.45}
+.ksec{font-family:var(--temple);letter-spacing:.1em;text-transform:uppercase;font-size:12.5px;color:var(--candle);margin:20px 0 9px}
 /* ===== MONTH VIEW ===== */
 .monthnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .monthnav .mt{font-family:var(--temple);font-size:19px;color:var(--moon);letter-spacing:.05em}
@@ -369,7 +386,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
     </div>
 
     <div class="toolrow">
-      <button class="ghost" onclick="copyPrevDay()">⧉ Copy previous day</button>
+      <button class="ghost" onclick="openCopy()">⧉ Copy a day / meal</button>
       <button class="ghost" onclick="openCreate('food')">＋ Custom food</button>
       <button class="ghost" onclick="openCreate('recipe')">＋ Recipe</button>
     </div>
@@ -425,6 +442,14 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 
 </div>
 
+  <!-- ============ KITCHEN ============ -->
+  <div class="page" id="pg-kitchen">
+    <div class="eyebrow">Cook with your cycle</div>
+    <div class="pagetitle">Kitchen</div>
+    <div class="ktabs"><button id="km_eat" onclick="setKMode('eat')">What to eat</button><button id="km_book" onclick="setKMode('book')">Recipe book</button></div>
+    <div id="kitchenBody"></div>
+  </div>
+
 <div class="backdrop" id="backdrop" onclick="closeServ()"></div>
 
 <div class="sheet" id="foodSheet">
@@ -443,6 +468,16 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 </div>
 
 <div class="serv" id="servSheet"><div id="servBody"></div></div>
+
+<div class="sheet" id="recipeSheet">
+  <div class="sheet-h"><div class="st">Recipe</div><div class="sx" onclick="closeRecipe()">×</div></div>
+  <div class="sheet-b" id="recipeBody"></div>
+</div>
+
+<div class="sheet" id="copySheet">
+  <div class="sheet-h"><div class="st">Copy meals</div><div class="sx" onclick="hideEl('copySheet')">×</div></div>
+  <div class="sheet-b" id="copyBody"></div>
+</div>
 
 <div class="sheet" id="monthSheet">
   <div class="sheet-h"><div class="st">Month</div><div class="sx" onclick="closeMonth()">×</div></div>
@@ -468,6 +503,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
   <button class="on" data-pg="today"><span class="ic">🔥</span>Today</button>
   <button data-pg="water"><span class="ic">💧</span>Water</button>
   <button data-pg="meals"><span class="ic">🍳</span>Meals</button>
+  <button data-pg="kitchen"><span class="ic">🍲</span>Kitchen</button>
   <button data-pg="cycle"><span class="ic">🌙</span>Cycle</button>
   <button data-pg="tend"><span class="ic">🕯</span>Tend</button>
 </nav>
@@ -918,7 +954,7 @@ function nutrientTargetsFor(ph){var sod=5000,iron=18;if(ph==='ovulation'||ph==='
 function nutrientTargets(){return nutrientTargetsFor(cycleInfo().phase.key);}
 
 function migrateMeals(){if(!S.meals)return;Object.keys(S.meals).forEach(function(dk){if(S.diary[dk])return;var arr=S.meals[dk]||[];if(!arr.length)return;var d={breakfast:[],lunch:[],dinner:[],snacks:[]};arr.forEach(function(m){var k=kcalOf(m.p||0,m.c||0,m.f||0);d.snacks.push({id:m.id||Date.now()+Math.floor(Math.random()*9999),name:m.t||'logged',qty:1,serv:'serving',grams:0,fid:null,kcal:m.kcal||k,p:m.p||0,c:m.c||0,f:m.f||0,fib:0,sug:0,sod:0,pot:0,iron:0,mag:0,phase:m.phase||phaseKeyForDate(dk),time:m.time||'',meal:'snacks'});});S.diary[dk]=d;});}
-function seedRecipes(){if(S.recipes&&S.recipes.length)return;S.recipes=(FAV_SEED||[]).map(function(f,i){return {id:'r'+(i+1),name:f.name,servings:1,ing:[],per:{kcal:kcalOf(f.p,f.c,f.f),p:f.p,c:f.c,f:f.f,fib:0,sug:0,sod:0,pot:0,iron:0,mag:0}};});}
+function seedRecipes(){if(S.recipes&&S.recipes.length)return;var seed=[['Tofu lemon ricotta pasta',25,55,18,['dinner','lunch'],['follicular','luteal']],['Beef + sweet potato chili',28,35,14,['dinner'],['menstrual','luteal']],['Beef stew (the batch)',30,20,18,['dinner','lunch'],['menstrual']],['Cod + roasted beets',32,15,3,['dinner','lunch'],['ovulation','menstrual']],['Eggs over spinach + GF toast',16,17,12,['breakfast'],['follicular','menstrual']],['Green protein smoothie',25,30,6,['breakfast','snacks'],['follicular','ovulation']]];S.recipes=seed.map(function(x,i){return {id:'r'+(i+1),name:x[0],servings:1,ing:[],meals:x[4],phases:x[5],note:'',per:{kcal:kcalOf(x[1],x[2],x[3]),p:x[1],c:x[2],f:x[3],fib:0,sug:0,sod:0,pot:0,iron:0,mag:0}};});}
 
 function microBar(lab,val,goal,unit,color,limit){var pct=goal?Math.min(1,val/goal):0;var over=val>goal;var c=limit?(over?'var(--rose)':color):color;return '<div class="micro"><div class="mt"><span>'+lab+'</span><b>'+Math.round(val)+(unit||'')+' / '+goal+(unit||'')+'</b></div><div class="tk"><div class="fl" style="width:'+(pct*100)+'%;background:'+c+'"></div></div></div>';}
 
@@ -1025,7 +1061,7 @@ function servAdd(){var c=_servCtx;if(!c)return;var vph=phaseKeyForDate(viewKey()
 function nowTime(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 
 /* ---- create custom food / recipe ---- */
-function openCreate(kind){document.getElementById('createTitle').textContent=(kind==='food'?'Custom food':'Recipe / saved meal');var b=document.getElementById('createBody');
+function openCreate(kind,editId){var b=document.getElementById('createBody');document.getElementById('createTitle').textContent=(kind==='food'?'Custom food':'Recipe / saved meal');
   if(kind==='food'){b.innerHTML='<div class="sub">Add a food once and reuse it. Enter values for ONE serving.</div>'+
     '<label class="fl">Name</label><input id="cf_n" placeholder="Mom\'s beef chili">'+
     '<div class="svrow" style="margin-top:10px"><div><label class="fl">Serving label</label><input id="cf_sl" placeholder="1 bowl"></div><div><label class="fl">Grams (optional)</label><input id="cf_g" type="number" inputmode="decimal" placeholder="350"></div></div>'+
@@ -1033,15 +1069,18 @@ function openCreate(kind){document.getElementById('createTitle').textContent=(ki
     '<div class="svrow" style="margin-top:10px"><div><label class="fl">Fiber</label><input id="cf_fib" type="number" inputmode="decimal"></div><div><label class="fl">Sugar</label><input id="cf_sug" type="number" inputmode="decimal"></div><div><label class="fl">Sodium mg</label><input id="cf_sod" type="number" inputmode="decimal"></div></div>'+
     '<div class="svrow" style="margin-top:10px"><div><label class="fl">Potassium mg</label><input id="cf_pot" type="number" inputmode="decimal"></div><div><label class="fl">Iron mg</label><input id="cf_iron" type="number" inputmode="decimal"></div><div><label class="fl">Magnesium mg</label><input id="cf_mag" type="number" inputmode="decimal"></div></div>'+
     '<button class="act" style="width:100%;margin-top:16px" onclick="saveCustomFood()">Save to My Foods</button>';}
-  else{_recipeDraft={name:'',servings:1,ing:[]};b.innerHTML='<div class="sub">Combine ingredients into a saved meal. Macros compute per serving.</div>'+
-    '<label class="fl">Recipe name</label><input id="rc_n" placeholder="Tofu lemon ricotta pasta" oninput="_recipeDraft.name=this.value">'+
-    '<div style="margin-top:10px"><label class="fl">Makes how many servings</label><input id="rc_s" type="number" inputmode="decimal" value="1" oninput="_recipeDraft.servings=+this.value||1;renderRecipeDraft()"></div>'+
-    '<div style="margin-top:14px"><label class="fl">Ingredients</label><div id="rc_ing"></div>'+
-    '<div class="svrow" style="margin-top:8px"><div style="flex:2"><input id="rc_q" placeholder="search food to add"></div></div>'+
-    '<div id="rc_sug"></div></div>'+
+  else{var ex=editId?recipeById(editId):null;_recipeDraft=ex?{name:ex.name,servings:ex.servings||1,ing:(ex.ing||[]).slice(),meals:(ex.meals||[]).slice(),phases:(ex.phases||[]).slice(),note:ex.note||'',editId:ex.id}:{name:'',servings:1,ing:[],meals:[],phases:[],note:'',editId:null};
+    document.getElementById('createTitle').textContent=ex?'Edit recipe':'New recipe';
+    b.innerHTML='<div class="sub">Build a meal once. Tag it by meal type and the phases it suits, so it shows up in your Kitchen.</div>'+
+    '<label class="fl">Recipe name</label><input id="rc_n" placeholder="Tofu lemon ricotta pasta" value="'+esc(_recipeDraft.name)+'" oninput="_recipeDraft.name=this.value">'+
+    '<div style="margin-top:10px"><label class="fl">Makes how many servings</label><input id="rc_s" type="number" inputmode="decimal" value="'+_recipeDraft.servings+'" oninput="_recipeDraft.servings=+this.value||1;renderRecipeDraft()"></div>'+
+    '<div style="margin-top:12px"><label class="fl">Meal type</label><div class="mealpick" id="rc_meals"></div></div>'+
+    '<div style="margin-top:8px"><label class="fl">Best in phases (blank = any time)</label><div class="mealpick" id="rc_phases"></div></div>'+
+    '<div style="margin-top:14px"><label class="fl">Ingredients</label><div id="rc_ing"></div><input id="rc_q" placeholder="search a food to add" style="margin-top:8px"><div id="rc_sug"></div></div>'+
+    '<div style="margin-top:10px"><label class="fl">Notes / how to make it (optional)</label><textarea id="rc_note" rows="3" oninput="_recipeDraft.note=this.value">'+esc(_recipeDraft.note)+'</textarea></div>'+
     '<div id="rc_tot" class="note"></div>'+
-    '<button class="act" style="width:100%;margin-top:12px" onclick="saveRecipe()">Save recipe</button>';
-    document.getElementById('rc_q').addEventListener('input',function(){recipeSearch(this.value);});renderRecipeDraft();}
+    '<button class="act" style="width:100%;margin-top:12px" onclick="saveRecipe()">'+(ex?'Update recipe':'Save recipe')+'</button>';
+    document.getElementById('rc_q').addEventListener('input',function(){recipeSearch(this.value);});renderRecipeChips();renderRecipeDraft();}
   showEl('createSheet');}
 function closeCreate(){hideEl('createSheet');}
 function val(id){var e=document.getElementById(id);return e?num(e.value):0;}
@@ -1052,9 +1091,108 @@ function saveCustomFood(){var nm=document.getElementById('cf_n').value.trim();if
 function recipeSearch(q){q=(q||'').toLowerCase();var host=document.getElementById('rc_sug');if(!q){host.innerHTML='';return;}var foods=allFoods().filter(function(f){return (f.n+' '+(f.a||[]).join(' ')).toLowerCase().indexOf(q)>=0;}).slice(0,8);host.innerHTML=foods.map(function(f){return frow(f.n,(f.serv[0][0]),nutrFromV(f.v,f.serv[0][1]).kcal,'addRecipeIng(\''+f.id+'\')');}).join('');}
 function addRecipeIng(id){var f=foodById(id);if(!f)return;var g=prompt('How many grams of '+f.n+'?  ('+f.serv[0][0]+' ≈ '+f.serv[0][1]+'g)',f.serv[0][1]);if(g==null)return;_recipeDraft.ing.push({fid:id,name:f.n,grams:num(g)});document.getElementById('rc_q').value='';document.getElementById('rc_sug').innerHTML='';renderRecipeDraft();}
 function rmRecipeIng(i){_recipeDraft.ing.splice(i,1);renderRecipeDraft();}
+function esc(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function toggleRMeal(mk){var a=_recipeDraft.meals,i=a.indexOf(mk);if(i>=0)a.splice(i,1);else a.push(mk);renderRecipeChips();}
+function toggleRPhase(pk){var a=_recipeDraft.phases,i=a.indexOf(pk);if(i>=0)a.splice(i,1);else a.push(pk);renderRecipeChips();}
+function renderRecipeChips(){var mh=document.getElementById('rc_meals');if(mh)mh.innerHTML=MEALSECS.map(function(mk){return '<button class="'+(_recipeDraft.meals.indexOf(mk)>=0?'on':'')+'" onclick="toggleRMeal(\''+mk+'\')">'+MEAL_LABEL[mk]+'</button>';}).join('');var ph=document.getElementById('rc_phases');if(ph)ph.innerHTML=PHASES.map(function(p){return '<button class="'+(_recipeDraft.phases.indexOf(p.key)>=0?'on':'')+'" onclick="toggleRPhase(\''+p.key+'\')">'+p.name+'</button>';}).join('');}
+function normalizeRecipes(){(S.recipes||[]).forEach(function(r){if(!r.meals)r.meals=[];if(!r.phases)r.phases=[];if(r.note==null)r.note='';});}
+var _curRecipe=null;
+function recipeTags(r){return (r.meals||[]).map(function(m){return '<span class="tag phase">'+MEAL_LABEL[m]+'</span>';}).join('')+(r.phases||[]).map(function(pk){var p=PHASES.filter(function(x){return x.key===pk;})[0];return '<span class="tag" style="background:'+(p?p.color:'#888')+'33;color:'+(p?p.color:'#aaa')+'">'+(p?p.name:pk)+'</span>';}).join('');}
+function openRecipe(id){var r=recipeById(id);if(!r)return;_curRecipe=id;var b=document.getElementById('recipeBody');var t=recipeTags(r);b.innerHTML='<div class="svn" style="font-size:23px">'+r.name+'</div><div style="margin:8px 0 14px">'+(t||'<span class="tiny muted">untagged</span>')+'</div>'+svPrev({kcal:r.per.kcal,p:r.per.p,c:r.per.c,f:r.per.f})+'<div class="note" style="text-align:center">per serving · makes '+(r.servings||1)+'</div>'+(r.ing&&r.ing.length?'<div style="margin-top:12px"><label class="fl">Ingredients</label>'+r.ing.map(function(g){return '<div class="entry"><div class="ei"><div class="en">'+g.name+'</div><div class="em2">'+g.grams+' g</div></div></div>';}).join('')+'</div>':'')+(r.note?'<div style="margin-top:12px"><label class="fl">Notes</label><div class="note" style="white-space:pre-wrap;color:var(--moonlight)">'+esc(r.note)+'</div></div>':'')+'<div style="display:flex;gap:8px;margin-top:18px"><button class="act" style="flex:1" onclick="logRecipeNow(\''+r.id+'\')">Log it</button><button class="ghost" onclick="editRecipe(\''+r.id+'\')">Edit</button><button class="ghost" onclick="deleteRecipe(\''+r.id+'\')">Delete</button></div>';showEl('recipeSheet');}
+function closeRecipe(){hideEl('recipeSheet');}
+function editRecipe(id){closeRecipe();openCreate('recipe',id);}
+function deleteRecipe(id){if(!confirm('Delete this recipe?'))return;S.recipes=(S.recipes||[]).filter(function(r){return r.id!==id;});persist();closeRecipe();if(typeof renderKitchen==='function')renderKitchen();flash('Deleted.');}
+function logRecipeNow(id){var r=recipeById(id);_viewDate=todayKey();_meal=(r&&r.meals&&r.meals[0])||'dinner';closeRecipe();openServRecipe(id);}
+
+/* ===== KITCHEN: suggestions + recipe book ===== */
+var PHASE_IDEAS={
+ menstrual:[
+  {t:'Grass-fed beef + cooked greens',fid:'gbeef',m:'dinner',why:'Iron + B12 to replace what the bleed takes.'},
+  {t:'Warm bone broth',fid:'bonebroth',m:'snacks',why:'Minerals + warmth on your lowest-energy days.'},
+  {t:'GF oats + pumpkin seeds',fid:'gfoats',m:'breakfast',why:'Slow iron + magnesium for cramps.'},
+  {t:'Dark chocolate + dates',fid:'darkchoc',m:'snacks',why:'Magnesium + iron — and you earned it.'},
+  {t:'Cod + roasted beets',fid:'cod',m:'dinner',why:'Light protein; beets support iron.'}],
+ follicular:[
+  {t:'Eggs + avocado',fid:'egg',m:'breakfast',why:'Protein to start your strongest training week.'},
+  {t:'Quinoa bowl',fid:'quinoa',m:'lunch',why:'Carbs land well now — fuel the build.'},
+  {t:'Tofu stir-fry',fid:'tofu',m:'dinner',why:'Lean protein for your push window.'},
+  {t:'Greek yogurt + berries',fid:'gyog',m:'snacks',why:'Protein + antioxidants, light and fresh.'},
+  {t:'Lentils + greens',fid:'lentils',m:'lunch',why:'Plant iron + fiber while energy is high.'}],
+ ovulation:[
+  {t:'Cod + brussels + cauliflower',fid:'cod',m:'dinner',why:'Cruciferous for estrogen clearance; cod is low-histamine.'},
+  {t:'Avocado + cucumber',fid:'avocado',m:'lunch',why:'Cooling + anti-inflammatory for your hottest week.'},
+  {t:'Blueberries (skip aged cheese)',fid:'blueberries',m:'snacks',why:'Antioxidants; keep histamine low now.'},
+  {t:'Bone broth + extra salt',fid:'bonebroth',m:'snacks',why:'Push fluids + sodium — your HR runs high here.'},
+  {t:'Big green salad + tuna-free protein',fid:'salad',m:'lunch',why:'Light + hydrating on your least-stable days.'}],
+ luteal:[
+  {t:'Sweet potato + beef chili',fid:'sweetpotato',m:'dinner',why:'Complex carbs steady late-luteal blood sugar.'},
+  {t:'Butternut squash bowl',fid:'squash',m:'lunch',why:'Magnesium for PMS, warm and grounding.'},
+  {t:'Oats + dark chocolate',fid:'gfoats',m:'breakfast',why:'Carbs + magnesium ease the back-half dip.'},
+  {t:'Greek yogurt + banana',fid:'gyog',m:'snacks',why:'Protein + potassium; ease caffeine now.'},
+  {t:'Pumpkin seeds',fid:'pumpkinseeds',m:'snacks',why:'Magnesium-dense — exactly what luteal craves.'}]
+};
+var _kmode='eat',_kfMeal='all',_kfPhase='all',_kSearch='';
+function setKMode(m){_kmode=m;renderKitchen();}
+function setKFMeal(m){_kfMeal=m;renderKitchen();}
+function setKFPhase(p){_kfPhase=p;renderKitchen();}
+function kSearchInput(v){_kSearch=v;renderKBookList();}
+function chipRow(opts,cur,fn){return '<div class="kfilters">'+opts.map(function(o){return '<button class="'+(cur===o[0]?'on':'')+'" onclick="'+fn+'(\''+o[0]+'\')">'+o[1]+'</button>';}).join('')+'</div>';}
+function recipeCard(r){return '<div class="rcard" onclick="openRecipe(\''+r.id+'\')"><div class="rn">'+r.name+'</div><div class="rmac">'+Math.round(r.per.kcal)+' cal · '+Math.round(r.per.p)+'p · '+Math.round(r.per.c)+'c · '+Math.round(r.per.f)+'f</div><div class="rtags">'+(recipeTags(r)||'<span class="tiny muted">untagged</span>')+'</div></div>';}
+var KMEALOPTS=[['all','All'],['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snacks','Snacks']];
+function renderKitchen(){
+  var host=document.getElementById('kitchenBody');if(!host)return;
+  var eb=document.getElementById('km_eat'),bb=document.getElementById('km_book');
+  if(eb)eb.className=(_kmode==='eat'?'on':'');if(bb)bb.className=(_kmode==='book'?'on':'');
+  if(_kmode==='eat'){
+    var ph=cycleInfo().phase;
+    var html='<div class="note" style="margin:0 0 10px">You are in <b style="color:'+ph.color+'">'+ph.name+'</b> (day '+cycleInfo().day+'). Here is what suits your body today.</div>';
+    html+=chipRow(KMEALOPTS,_kfMeal,'setKFMeal');
+    var mine=(S.recipes||[]).filter(function(r){var pOk=!r.phases||!r.phases.length||r.phases.indexOf(ph.key)>=0;var mOk=_kfMeal==='all'||(r.meals&&r.meals.indexOf(_kfMeal)>=0);return pOk&&mOk;});
+    html+='<div class="ksec">Your recipes for '+ph.name+'</div>';
+    html+=mine.length?mine.map(recipeCard).join(''):'<div class="note">No saved recipes tagged for this'+(_kfMeal!=='all'?' meal +':'')+' phase yet. Add some in the Recipe book — tag them with their phases.</div>';
+    var ideas=(PHASE_IDEAS[ph.key]||[]).filter(function(it){return _kfMeal==='all'||it.m===_kfMeal;});
+    html+='<div class="ksec">Try something new · '+ph.name+'</div>';
+    html+=ideas.length?ideas.map(function(it){return '<div class="kidea" onclick="logIdea(\''+it.fid+'\',\''+it.m+'\')"><div class="ki">✦</div><div><div class="kt">'+it.t+'</div><div class="kw">'+it.why+'</div></div></div>';}).join(''):'<div class="note">No ideas for this meal — try All.</div>';
+    host.innerHTML=html;
+  }else{
+    var phaseOpts=[['all','Any phase']].concat(PHASES.map(function(p){return [p.key,p.name];}));
+    var html='<input id="kbSearch" placeholder="search your recipes…" value="'+esc(_kSearch)+'" oninput="kSearchInput(this.value)"><div style="height:10px"></div>';
+    html+=chipRow(KMEALOPTS,_kfMeal,'setKFMeal')+chipRow(phaseOpts,_kfPhase,'setKFPhase');
+    html+='<button class="act" style="width:100%;margin:6px 0 14px" onclick="openCreate(\'recipe\')">＋ New recipe</button><div id="kbookList"></div>';
+    host.innerHTML=html;renderKBookList();
+  }
+}
+function renderKBookList(){
+  var el=document.getElementById('kbookList');if(!el)return;var q=(_kSearch||'').toLowerCase();
+  var list=(S.recipes||[]).filter(function(r){var nOk=!q||r.name.toLowerCase().indexOf(q)>=0;var mOk=_kfMeal==='all'||(r.meals&&r.meals.indexOf(_kfMeal)>=0);var pOk=_kfPhase==='all'||(r.phases&&r.phases.indexOf(_kfPhase)>=0);return nOk&&mOk&&pOk;});
+  el.innerHTML=list.length?list.map(recipeCard).join(''):'<div class="note">No recipes match. Tap ＋ New recipe to add one.</div>';
+}
+function logIdea(fid,m){_viewDate=todayKey();_meal=m||'snacks';openServFood(fid);}
+
+/* ===== COPY (any day, whole day or single meal) ===== */
+var _copySrc=null;
+function openCopy(){_copySrc=shiftDateKey(viewKey(),-1);renderCopy();showEl('copySheet');}
+function copyShift(d){_copySrc=shiftDateKey(_copySrc,d);renderCopy();}
+function copyPickSrc(v){if(v)_copySrc=v;renderCopy();}
+function copyOpenPicker(){var i=document.getElementById('copyDate');if(!i)return;if(i.showPicker){try{i.showPicker();return;}catch(e){}}i.click();}
+function renderCopy(){
+  var src=_copySrc,tgt=viewKey(),sd=S.diary[src],b=document.getElementById('copyBody');
+  var h='<div class="note" style="margin:0 0 8px">Copying into <b style="color:var(--candle)">'+dateLabel(tgt)+'</b> · '+dateSub(tgt)+'</div>';
+  h+='<div class="datestrip"><button class="dnav" onclick="copyShift(-1)">‹</button><div class="dlabel" onclick="copyOpenPicker()"><div class="dl1">'+dateLabel(src)+' <span style="color:var(--muted);font-size:14px">▾</span></div><div class="dl2">'+dateSub(src)+' · copy from</div></div><button class="dnav" onclick="copyShift(1)">›</button><input type="date" id="copyDate" value="'+src+'" onchange="copyPickSrc(this.value)" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px"></div>';
+  if(!sd||!flatDay(src).length){h+='<div class="note">Nothing logged this day. Step to another day above.</div>';b.innerHTML=h;return;}
+  h+='<button class="act" style="width:100%;margin:4px 0 14px" onclick="doCopyDay()">⧉ Copy the whole day ('+Math.round(sumEntries(flatDay(src)).kcal)+' cal)</button>';
+  h+='<div class="ksec">Or copy just one meal</div>';
+  MEALSECS.forEach(function(mk){var list=sd[mk]||[];if(!list.length)return;var sub=sumEntries(list);
+    h+='<div class="rcard" onclick="doCopyMeal(\''+mk+'\')"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div class="rn" style="font-size:16px">'+MEAL_LABEL[mk]+'</div><div class="rmac">'+list.length+' item'+(list.length>1?'s':'')+' · '+Math.round(sub.kcal)+' cal</div></div><div style="color:var(--candle);font-size:15px;white-space:nowrap">Copy ›</div></div></div>';
+  });
+  b.innerHTML=h;
+}
+function copyEntries(list,tgtMeal){var d=diaryFor(viewKey()),vph=phaseKeyForDate(viewKey());list.forEach(function(e){var n=JSON.parse(JSON.stringify(e));n.id=Date.now()+Math.floor(Math.random()*99999);n.phase=vph;n.meal=tgtMeal;d[tgtMeal].push(n);});}
+function doCopyMeal(mk){var sd=S.diary[_copySrc];if(!sd)return;copyEntries(sd[mk]||[],mk);persist();renderMeals();renderToday();renderPatterns();flash('Copied '+MEAL_LABEL[mk]+' in.');}
+function doCopyDay(){var sd=S.diary[_copySrc];if(!sd)return;MEALSECS.forEach(function(mk){copyEntries(sd[mk]||[],mk);});persist();renderMeals();renderToday();renderPatterns();hideEl('copySheet');flash('Copied '+dateLabel(_copySrc)+' into '+dateLabel(viewKey())+'.');}
 function recipeTotals(){var t=blankTot();_recipeDraft.ing.forEach(function(ig){var f=foodById(ig.fid);if(!f)return;var n=nutrFromV(f.v,ig.grams);t.kcal+=n.kcal;t.p+=n.p;t.c+=n.c;t.f+=n.f;t.fib+=n.fib;t.sug+=n.sug;t.sod+=n.sod;t.pot+=n.pot;t.iron+=n.iron;t.mag+=n.mag;});return t;}
 function renderRecipeDraft(){var ing=document.getElementById('rc_ing');if(!ing)return;ing.innerHTML=_recipeDraft.ing.map(function(g,i){return '<div class="entry"><div class="ei"><div class="en">'+g.name+'</div><div class="em2">'+g.grams+' g</div></div><div class="x" onclick="rmRecipeIng('+i+')">×</div></div>';}).join('')||'<div class="note">No ingredients yet.</div>';var t=recipeTotals(),s=_recipeDraft.servings||1;document.getElementById('rc_tot').innerHTML='Per serving (of '+s+'): <b style="color:var(--moon)">'+Math.round(t.kcal/s)+' cal · '+Math.round(t.p/s)+'p · '+Math.round(t.c/s)+'c · '+Math.round(t.f/s)+'f</b>';}
-function saveRecipe(){var nm=(_recipeDraft.name||document.getElementById('rc_n').value||'').trim();if(!nm){flash('Name the recipe.');return;}if(!_recipeDraft.ing.length){flash('Add an ingredient.');return;}var t=recipeTotals(),s=_recipeDraft.servings||1;var per={kcal:Math.round(t.kcal/s),p:r1(t.p/s),c:r1(t.c/s),f:r1(t.f/s),fib:r1(t.fib/s),sug:r1(t.sug/s),sod:Math.round(t.sod/s),pot:Math.round(t.pot/s),iron:r1(t.iron/s),mag:Math.round(t.mag/s)};var r={id:'r_'+Date.now(),name:nm,servings:s,ing:_recipeDraft.ing,per:per};S.recipes.push(r);persist();closeCreate();flash('Recipe saved.');openServRecipe(r.id);}
+function saveRecipe(){var nm=(_recipeDraft.name||'').trim();if(!nm){flash('Name the recipe.');return;}if(!_recipeDraft.ing.length){flash('Add an ingredient first.');return;}var t=recipeTotals(),s=_recipeDraft.servings||1;var per={kcal:Math.round(t.kcal/s),p:r1(t.p/s),c:r1(t.c/s),f:r1(t.f/s),fib:r1(t.fib/s),sug:r1(t.sug/s),sod:Math.round(t.sod/s),pot:Math.round(t.pot/s),iron:r1(t.iron/s),mag:Math.round(t.mag/s)};if(_recipeDraft.editId){var r=recipeById(_recipeDraft.editId);if(r){r.name=nm;r.servings=s;r.ing=_recipeDraft.ing;r.per=per;r.meals=_recipeDraft.meals;r.phases=_recipeDraft.phases;r.note=_recipeDraft.note;}persist();closeCreate();flash('Recipe updated.');if(typeof renderKitchen==='function')renderKitchen();openRecipe(_recipeDraft.editId);return;}var nr={id:'r_'+Date.now(),name:nm,servings:s,ing:_recipeDraft.ing,per:per,meals:_recipeDraft.meals,phases:_recipeDraft.phases,note:_recipeDraft.note};S.recipes.push(nr);persist();closeCreate();flash('Recipe saved.');if(typeof renderKitchen==='function')renderKitchen();openRecipe(nr.id);}
 
 /* ---- barcode scan (lazy ZXing, online only) ---- */
 function loadZXing(cb){if(window.ZXingBrowser){cb(true);return;}var sc=document.createElement('script');sc.src='https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js';sc.onload=function(){cb(!!window.ZXingBrowser);};sc.onerror=function(){cb(false);};document.head.appendChild(sc);}
@@ -1140,7 +1278,7 @@ function downloadSync(){
 
 /* ============ nav + boot ============ */
 function flash(msg){var f=document.getElementById('flash');f.textContent=msg;f.classList.add('show');clearTimeout(window._ft);window._ft=setTimeout(function(){f.classList.remove('show');},2200);}
-function renderAll(){renderHeader();renderToday();renderWater();renderMeals();renderCycle();renderTend();}
+function renderAll(){renderHeader();renderToday();renderWater();renderMeals();renderKitchen();renderCycle();renderTend();}
 document.querySelectorAll('nav.tabs button').forEach(function(b){
   b.onclick=function(){
     document.querySelectorAll('nav.tabs button').forEach(function(x){x.classList.remove('on');});
@@ -1151,7 +1289,7 @@ document.querySelectorAll('nav.tabs button').forEach(function(b){
     window.scrollTo(0,0);
   };
 });
-try{migrateMeals();seedRecipes();persist();}catch(e){}
+try{migrateMeals();seedRecipes();normalizeRecipes();persist();}catch(e){}
 renderAll();
 
 /* register service worker for offline (only works over https / GitHub Pages — fails silently elsewhere) */
