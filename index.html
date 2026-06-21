@@ -984,7 +984,7 @@ function renderMeals(){
   document.getElementById('diaryBody').innerHTML=html;
 }
 function toggleMicros(){var b=document.getElementById('microBody'),t=document.getElementById('microToggle');if(b.style.display==='none'){b.style.display='block';t.textContent='hide ▴';}else{b.style.display='none';t.textContent='show all ▾';}}
-function delEntry(mk,id){var d=diaryFor(viewKey());d[mk]=d[mk].filter(function(e){return String(e.id)!==String(id);});persist();renderMeals();renderToday();renderPatterns();}
+function delEntry(mk,id){var dk=viewKey(),d=diaryFor(dk);var ent=d[mk].filter(function(e){return String(e.id)===String(id);})[0];d[mk]=d[mk].filter(function(e){return String(e.id)!==String(id);});persist();renderMeals();renderToday();renderPatterns();if(ent)showUndo('Removed '+ent.name,function(){diaryFor(dk)[mk].push(ent);persist();renderMeals();renderToday();renderPatterns();});}
 function copyPrevDay(){var dk=viewKey();var prev=shiftDateKey(dk,-1);var yd=S.diary[prev];if(!yd||!flatDay(prev).length){flash('Nothing logged the day before.');return;}var d=diaryFor(dk);var vph=phaseKeyForDate(dk);MEALSECS.forEach(function(mk){(yd[mk]||[]).forEach(function(e){var n=JSON.parse(JSON.stringify(e));n.id=Date.now()+Math.floor(Math.random()*99999);n.phase=vph;d[mk].push(n);});});persist();renderMeals();renderToday();renderPatterns();flash('Copied '+dateLabel(prev)+' here.');}
 
 /* ---- food search sheet ---- */
@@ -1169,27 +1169,37 @@ function renderKBookList(){
 }
 function logIdea(fid,m){_viewDate=todayKey();_meal=m||'snacks';openServFood(fid);}
 
-/* ===== COPY (any day, whole day or single meal) ===== */
-var _copySrc=null;
-function openCopy(){_copySrc=shiftDateKey(viewKey(),-1);renderCopy();showEl('copySheet');}
+/* ===== COPY (any source day+meal -> any destination day+meal) ===== */
+var _copySrc=null,_copyDest=null,_copyDestMeal='same';
+function openCopy(){_copyDest=viewKey();_copySrc=shiftDateKey(_copyDest,-1);_copyDestMeal='same';renderCopy();showEl('copySheet');}
 function copyShift(d){_copySrc=shiftDateKey(_copySrc,d);renderCopy();}
 function copyPickSrc(v){if(v)_copySrc=v;renderCopy();}
 function copyOpenPicker(){var i=document.getElementById('copyDate');if(!i)return;if(i.showPicker){try{i.showPicker();return;}catch(e){}}i.click();}
+function copyDestShift(d){_copyDest=shiftDateKey(_copyDest,d);renderCopy();}
+function copyDestPick(v){if(v)_copyDest=v;renderCopy();}
+function copyDestPicker(){var i=document.getElementById('copyDestDate');if(!i)return;if(i.showPicker){try{i.showPicker();return;}catch(e){}}i.click();}
+function setCopyDestMeal(m){_copyDestMeal=m;renderCopy();}
+function copyStrip(label,dk,navFn,pickFn,picker,inputId,color){return '<label class="fl"'+(label==='Into'?' style="margin-top:8px"':'')+'>'+label+'</label><div class="datestrip"><button class="dnav" onclick="'+navFn+'(-1)">‹</button><div class="dlabel" onclick="'+picker+'()"><div class="dl1"'+(color?' style="color:'+color+'"':'')+'>'+dateLabel(dk)+' <span style="color:var(--muted);font-size:14px">▾</span></div><div class="dl2">'+dateSub(dk)+'</div></div><button class="dnav" onclick="'+navFn+'(1)">›</button><input type="date" id="'+inputId+'" value="'+dk+'" onchange="'+pickFn+'(this.value)" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px"></div>';}
 function renderCopy(){
-  var src=_copySrc,tgt=viewKey(),sd=S.diary[src],b=document.getElementById('copyBody');
-  var h='<div class="note" style="margin:0 0 8px">Copying into <b style="color:var(--candle)">'+dateLabel(tgt)+'</b> · '+dateSub(tgt)+'</div>';
-  h+='<div class="datestrip"><button class="dnav" onclick="copyShift(-1)">‹</button><div class="dlabel" onclick="copyOpenPicker()"><div class="dl1">'+dateLabel(src)+' <span style="color:var(--muted);font-size:14px">▾</span></div><div class="dl2">'+dateSub(src)+' · copy from</div></div><button class="dnav" onclick="copyShift(1)">›</button><input type="date" id="copyDate" value="'+src+'" onchange="copyPickSrc(this.value)" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px"></div>';
-  if(!sd||!flatDay(src).length){h+='<div class="note">Nothing logged this day. Step to another day above.</div>';b.innerHTML=h;return;}
-  h+='<button class="act" style="width:100%;margin:4px 0 14px" onclick="doCopyDay()">⧉ Copy the whole day ('+Math.round(sumEntries(flatDay(src)).kcal)+' cal)</button>';
-  h+='<div class="ksec">Or copy just one meal</div>';
+  var src=_copySrc,dest=_copyDest,sd=S.diary[src],b=document.getElementById('copyBody');
+  var h=copyStrip('Copy from',src,'copyShift','copyPickSrc','copyOpenPicker','copyDate',null);
+  h+=copyStrip('Into',dest,'copyDestShift','copyDestPick','copyDestPicker','copyDestDate','var(--candle)');
+  if(!sd||!flatDay(src).length){h+='<div class="note">Nothing logged on '+dateLabel(src)+'. Step to another day above.</div>';b.innerHTML=h;return;}
+  h+='<button class="act" style="width:100%;margin:12px 0 14px" onclick="doCopyDay()">⧉ Copy the whole day → '+dateLabel(dest)+'</button>';
+  h+='<div class="ksec">Or copy one meal</div>';
+  var dm=[['same','Same slot'],['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snacks','Snacks']];
+  h+='<div class="kfilters">'+dm.map(function(o){return '<button class="'+(_copyDestMeal===o[0]?'on':'')+'" onclick="setCopyDestMeal(\''+o[0]+'\')">'+o[1]+'</button>';}).join('')+'</div>';
   MEALSECS.forEach(function(mk){var list=sd[mk]||[];if(!list.length)return;var sub=sumEntries(list);
-    h+='<div class="rcard" onclick="doCopyMeal(\''+mk+'\')"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div class="rn" style="font-size:16px">'+MEAL_LABEL[mk]+'</div><div class="rmac">'+list.length+' item'+(list.length>1?'s':'')+' · '+Math.round(sub.kcal)+' cal</div></div><div style="color:var(--candle);font-size:15px;white-space:nowrap">Copy ›</div></div></div>';
+    var into=(_copyDestMeal==='same'?MEAL_LABEL[mk]:MEAL_LABEL[_copyDestMeal]);
+    h+='<div class="rcard" onclick="doCopyMeal(\''+mk+'\')"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div class="rn" style="font-size:16px">'+MEAL_LABEL[mk]+'</div><div class="rmac">'+list.length+' item'+(list.length>1?'s':'')+' · '+Math.round(sub.kcal)+' cal → '+into+'</div></div><div style="color:var(--candle);font-size:15px;white-space:nowrap">Copy ›</div></div></div>';
   });
   b.innerHTML=h;
 }
-function copyEntries(list,tgtMeal){var d=diaryFor(viewKey()),vph=phaseKeyForDate(viewKey());list.forEach(function(e){var n=JSON.parse(JSON.stringify(e));n.id=Date.now()+Math.floor(Math.random()*99999);n.phase=vph;n.meal=tgtMeal;d[tgtMeal].push(n);});}
-function doCopyMeal(mk){var sd=S.diary[_copySrc];if(!sd)return;copyEntries(sd[mk]||[],mk);persist();renderMeals();renderToday();renderPatterns();flash('Copied '+MEAL_LABEL[mk]+' in.');}
-function doCopyDay(){var sd=S.diary[_copySrc];if(!sd)return;MEALSECS.forEach(function(mk){copyEntries(sd[mk]||[],mk);});persist();renderMeals();renderToday();renderPatterns();hideEl('copySheet');flash('Copied '+dateLabel(_copySrc)+' into '+dateLabel(viewKey())+'.');}
+var _copyCt=0;
+function copyEntries(list,srcMeal,track){var dmeal=(_copyDestMeal==='same'?srcMeal:_copyDestMeal);var d=diaryFor(_copyDest),vph=phaseKeyForDate(_copyDest);list.forEach(function(e){var n=JSON.parse(JSON.stringify(e));n.id=Date.now()+'_'+(_copyCt++)+'_'+Math.floor(Math.random()*9999);n.phase=vph;n.meal=dmeal;d[dmeal].push(n);track.push({dk:_copyDest,meal:dmeal,id:n.id});});}
+function removeTracked(tr){tr.forEach(function(t){var d=S.diary[t.dk];if(d&&d[t.meal])d[t.meal]=d[t.meal].filter(function(e){return String(e.id)!==String(t.id);});});persist();renderMeals();renderToday();renderPatterns();}
+function doCopyMeal(mk){var sd=S.diary[_copySrc];if(!sd)return;var tr=[];copyEntries(sd[mk]||[],mk,tr);persist();renderMeals();renderToday();renderPatterns();showUndo('Copied '+MEAL_LABEL[mk]+' → '+dateLabel(_copyDest),function(){removeTracked(tr);});}
+function doCopyDay(){var sd=S.diary[_copySrc];if(!sd)return;var tr=[];MEALSECS.forEach(function(mk){copyEntries(sd[mk]||[],mk,tr);});persist();renderMeals();renderToday();renderPatterns();hideEl('copySheet');showUndo('Copied '+dateLabel(_copySrc)+' → '+dateLabel(_copyDest),function(){removeTracked(tr);});}
 function recipeTotals(){var t=blankTot();_recipeDraft.ing.forEach(function(ig){var f=foodById(ig.fid);if(!f)return;var n=nutrFromV(f.v,ig.grams);t.kcal+=n.kcal;t.p+=n.p;t.c+=n.c;t.f+=n.f;t.fib+=n.fib;t.sug+=n.sug;t.sod+=n.sod;t.pot+=n.pot;t.iron+=n.iron;t.mag+=n.mag;});return t;}
 function renderRecipeDraft(){var ing=document.getElementById('rc_ing');if(!ing)return;ing.innerHTML=_recipeDraft.ing.map(function(g,i){return '<div class="entry"><div class="ei"><div class="en">'+g.name+'</div><div class="em2">'+g.grams+' g</div></div><div class="x" onclick="rmRecipeIng('+i+')">×</div></div>';}).join('')||'<div class="note">No ingredients yet.</div>';var t=recipeTotals(),s=_recipeDraft.servings||1;document.getElementById('rc_tot').innerHTML='Per serving (of '+s+'): <b style="color:var(--moon)">'+Math.round(t.kcal/s)+' cal · '+Math.round(t.p/s)+'p · '+Math.round(t.c/s)+'c · '+Math.round(t.f/s)+'f</b>';}
 function saveRecipe(){var nm=(_recipeDraft.name||'').trim();if(!nm){flash('Name the recipe.');return;}if(!_recipeDraft.ing.length){flash('Add an ingredient first.');return;}var t=recipeTotals(),s=_recipeDraft.servings||1;var per={kcal:Math.round(t.kcal/s),p:r1(t.p/s),c:r1(t.c/s),f:r1(t.f/s),fib:r1(t.fib/s),sug:r1(t.sug/s),sod:Math.round(t.sod/s),pot:Math.round(t.pot/s),iron:r1(t.iron/s),mag:Math.round(t.mag/s)};if(_recipeDraft.editId){var r=recipeById(_recipeDraft.editId);if(r){r.name=nm;r.servings=s;r.ing=_recipeDraft.ing;r.per=per;r.meals=_recipeDraft.meals;r.phases=_recipeDraft.phases;r.note=_recipeDraft.note;}persist();closeCreate();flash('Recipe updated.');if(typeof renderKitchen==='function')renderKitchen();openRecipe(_recipeDraft.editId);return;}var nr={id:'r_'+Date.now(),name:nm,servings:s,ing:_recipeDraft.ing,per:per,meals:_recipeDraft.meals,phases:_recipeDraft.phases,note:_recipeDraft.note};S.recipes.push(nr);persist();closeCreate();flash('Recipe saved.');if(typeof renderKitchen==='function')renderKitchen();openRecipe(nr.id);}
@@ -1277,7 +1287,10 @@ function downloadSync(){
 }
 
 /* ============ nav + boot ============ */
-function flash(msg){var f=document.getElementById('flash');f.textContent=msg;f.classList.add('show');clearTimeout(window._ft);window._ft=setTimeout(function(){f.classList.remove('show');},2200);}
+function flash(msg){var f=document.getElementById('flash');f.textContent=msg;f.style.pointerEvents='none';f.classList.add('show');clearTimeout(window._ft);window._ft=setTimeout(function(){f.classList.remove('show');},2200);}
+var _undo=null;
+function showUndo(msg,fn){_undo=fn;var f=document.getElementById('flash');f.innerHTML=msg+' <span style="color:var(--moon);text-decoration:underline;margin-left:10px;padding:4px" onclick="doUndo()">Undo</span>';f.style.pointerEvents='auto';f.classList.add('show');clearTimeout(window._ft);window._ft=setTimeout(function(){f.classList.remove('show');f.style.pointerEvents='none';},6000);}
+function doUndo(){if(_undo){_undo();_undo=null;flash('Undone.');}}
 function renderAll(){renderHeader();renderToday();renderWater();renderMeals();renderKitchen();renderCycle();renderTend();}
 document.querySelectorAll('nav.tabs button').forEach(function(b){
   b.onclick=function(){
