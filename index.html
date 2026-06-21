@@ -401,9 +401,11 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 
   <!-- ============ CYCLE ============ -->
   <div class="page" id="pg-cycle">
-    <div class="eyebrow">Your body, tracked</div>
-    <div class="pagetitle">Cycle</div>
-    <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div><div class="eyebrow" id="cycEyebrow">Your body, tracked</div><div class="pagetitle" id="cycTitle">Cycle</div></div>
+      <button class="ghost" style="margin-top:10px;padding:10px 14px;font-size:18px" onclick="openCycleSettings()">⚙</button>
+    </div>
+    <div class="card" id="cycRingCard">
       <div class="ring-wrap" id="cycleRingBox"></div>
       <div style="text-align:center"><div class="sub" style="margin:0" id="cyclePhaseLine"></div><div id="cycleNext" class="note" style="margin-top:4px"></div></div>
     </div>
@@ -412,13 +414,14 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       <button class="ghost" onclick="openCalendar()">📅 Calendar</button>
       <button class="ghost" onclick="openCycleInsights()">📊 Patterns</button>
     </div>
+    <div id="cycleFert"></div>
     <div id="cycleHeadsUp"></div>
-    <div class="card"><h3>Your body right now</h3><div class="sub" id="cycleBodySub"></div><div id="cycleScience" class="note"></div></div>
-    <div class="card">
+    <div class="card" id="cycBodyCard"><h3 id="cycBodyH">Your body right now</h3><div class="sub" id="cycleBodySub"></div><div id="cycleScience" class="note"></div></div>
+    <div class="card" id="cycPhaseCard">
       <h3>This phase</h3>
       <div class="guide" id="phaseGuide"></div>
     </div>
-    <div class="card" style="border-style:dashed"><div class="note" style="margin:0">Mark period days in <b style="color:var(--moonlight)">Visible</b> too if you like — but here is where your body's full story lives. Predictions sharpen every time you log.</div></div>
+    <div class="card" style="border-style:dashed" id="cycNote"><div class="note" style="margin:0">Mark period days in <b style="color:var(--moonlight)">Visible</b> too if you like — but here is where your body's full story lives. Predictions sharpen every time you log.</div></div>
   </div>
 
   <!-- ============ TEND ============ -->
@@ -513,6 +516,11 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
   <div class="sheet-b" id="cycleInsightsBody"></div>
 </div>
 
+<div class="sheet" id="cycSettingsSheet">
+  <div class="sheet-h"><div class="st">Body &amp; cycle</div><div class="sx" onclick="closeCycSettings()">×</div></div>
+  <div class="sheet-b" id="cycSettingsBody"></div>
+</div>
+
 <div class="sheet" id="monthSheet">
   <div class="sheet-h"><div class="st">Month</div><div class="sx" onclick="closeMonth()">×</div></div>
   <div class="sheet-b">
@@ -538,7 +546,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
   <button data-pg="water"><span class="ic">💧</span>Water</button>
   <button data-pg="meals"><span class="ic">🍳</span>Meals</button>
   <button data-pg="kitchen"><span class="ic">🍲</span>Kitchen</button>
-  <button data-pg="cycle"><span class="ic">🌙</span>Cycle</button>
+  <button data-pg="cycle"><span class="ic">🌙</span><span id="cycleTabLabel">Cycle</span></button>
   <button data-pg="tend"><span class="ic">🕯</span>Tend</button>
 </nav>
 
@@ -562,7 +570,7 @@ var FAV_SEED=[
 ];
 var defaults={
   lastPeriodStart:'2026-05-23', cycleLength:29, cycleUpdatedAt:0,
-  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, symptoms:{}, supps:{}, counts:[], rites:{},
+  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, cycleMode:'C', symptoms:{}, supps:{}, counts:[], rites:{},
   favorites:FAV_SEED.slice(), lastSync:0
 };
 var S=Object.assign({},defaults,JSON.parse(localStorage.getItem(EKEY)||'{}'));
@@ -629,7 +637,7 @@ var MACRO_PHASE={
  ovulation:{kcal:2180,p:140,c:250,f:68,note:'Lighter + anti-inflammatory, histamine-aware. Protein stays high; hydrate hard.'},
  luteal:{kcal:2380,p:145,c:285,f:70,note:'+130 cal, complex carbs, more magnesium. Your body genuinely needs more here — give it.'}
 };
-function targetsFor(ph){return MACRO_PHASE[ph]||MACRO_BASE;}
+function targetsFor(ph){if(!hasCycle())return MACRO_BASE;return MACRO_PHASE[ph]||MACRO_BASE;}
 function targets(){return targetsFor(cycleInfo().phase.key);}
 
 /* ============ water goal ============ */
@@ -999,7 +1007,7 @@ function renderMonth(){
   document.getElementById('monthLegend').innerHTML=PHASES.map(function(p){return '<span><i style="background:'+p.color+'"></i>'+p.name+'</span>';}).join('');
 }
 function pickMonthDay(dk){_viewDate=dk;closeMonth();renderMeals();}
-function nutrientTargetsFor(ph){var sod=5000,iron=18;if(ph==='ovulation'||ph==='menstrual')sod=7000;if(ph==='menstrual')iron=27;return {fib:28,sug:50,sod:sod,pot:3500,iron:iron,mag:350,se:55,zn:9,io:150,ca:1000};}
+function nutrientTargetsFor(ph){if(!hasCycle())return {fib:28,sug:50,sod:5000,pot:3500,iron:18,mag:350,se:55,zn:9,io:150,ca:1000};var sod=5000,iron=18;if(ph==='ovulation'||ph==='menstrual')sod=7000;if(ph==='menstrual')iron=27;return {fib:28,sug:50,sod:sod,pot:3500,iron:iron,mag:350,se:55,zn:9,io:150,ca:1000};}
 function nutrientTargets(){return nutrientTargetsFor(cycleInfo().phase.key);}
 
 function migrateMeals(){if(!S.meals)return;Object.keys(S.meals).forEach(function(dk){if(S.diary[dk])return;var arr=S.meals[dk]||[];if(!arr.length)return;var d={breakfast:[],lunch:[],dinner:[],snacks:[]};arr.forEach(function(m){var k=kcalOf(m.p||0,m.c||0,m.f||0);d.snacks.push({id:m.id||Date.now()+Math.floor(Math.random()*9999),name:m.t||'logged',qty:1,serv:'serving',grams:0,fid:null,kcal:m.kcal||k,p:m.p||0,c:m.c||0,f:m.f||0,fib:0,sug:0,sod:0,pot:0,iron:0,mag:0,phase:m.phase||phaseKeyForDate(dk),time:m.time||'',meal:'snacks'});});S.diary[dk]=d;});}
@@ -1012,7 +1020,7 @@ function renderMeals(){
   var tg=targetsFor(vp.phase.key), nt=nutrientTargetsFor(vp.phase.key), tot=sumEntries(flatDay(dk));
   var calLeft=Math.round(tg.kcal-tot.kcal);
   var dl=document.getElementById('dLabel'); if(dl)dl.textContent=dateLabel(dk);
-  var ds=document.getElementById('dSub'); if(ds){ds.textContent=dateSub(dk)+' · Day '+vp.day+' · '+vp.phase.name;ds.style.color=vp.phase.color;}
+  var ds=document.getElementById('dSub'); if(ds){ds.textContent=hasCycle()?dateSub(dk)+' · Day '+vp.day+' · '+vp.phase.name:dateSub(dk);ds.style.color=hasCycle()?vp.phase.color:'var(--muted)';}
   var mdi=document.getElementById('mealDate'); if(mdi)mdi.value=dk;
   var dt=document.getElementById('dToday'); if(dt)dt.innerHTML=(dk!==todayKey())?'<button class="ghost" onclick="mealsToday()">↩ jump back to today</button>':'';
   document.getElementById('calRing').innerHTML=ring(tot.kcal/tg.kcal,(calLeft>=0?calLeft:'+'+(-calLeft)),(calLeft>=0?'cal left':'cal over'),Math.round(tg.kcal)+' goal','#E0743C',128);
@@ -1225,17 +1233,28 @@ function renderKitchen(){
   var eb=document.getElementById('km_eat'),bb=document.getElementById('km_book');
   if(eb)eb.className=(_kmode==='eat'?'on':'');if(bb)bb.className=(_kmode==='book'?'on':'');
   if(_kmode==='eat'){
-    var ph=cycleInfo().phase;
-    var html='<div class="note" style="margin:0 0 10px">You are in <b style="color:'+ph.color+'">'+ph.name+'</b> (day '+cycleInfo().day+'). Here is what suits your body today.</div>';
-    if(ph.key==='menstrual'){var er=(S.recipes||[]).filter(function(r){return r.spoons&&r.spoons<=2;}),ei=(PHASE_IDEAS[ph.key]||[]).filter(function(it){return EASY_IDEA_FIDS[it.fid];});html+='<div class="ksec">Low-spoon for a low-energy day</div>'+((er.length||ei.length)?er.map(recipeCard).join('')+ei.map(ideaHtml).join(''):'<div class="note">Tag recipes “low-spoon” and they show here on menstrual days.</div>');}
-    html+=chipRow(KMEALOPTS,_kfMeal,'setKFMeal');
-    var mine=(S.recipes||[]).filter(function(r){var pOk=!r.phases||!r.phases.length||r.phases.indexOf(ph.key)>=0;var mOk=_kfMeal==='all'||(r.meals&&r.meals.indexOf(_kfMeal)>=0);return pOk&&mOk;});
-    html+='<div class="ksec">Your recipes for '+ph.name+'</div>';
-    html+=mine.length?mine.map(recipeCard).join(''):'<div class="note">No saved recipes tagged for this'+(_kfMeal!=='all'?' meal +':'')+' phase yet. Add some in the Recipe book — tag them with their phases.</div>';
-    var ideas=(PHASE_IDEAS[ph.key]||[]).filter(function(it){return _kfMeal==='all'||it.m===_kfMeal;});
-    html+='<div class="ksec">Try something new · '+ph.name+'</div>';
-    html+=ideas.length?ideas.map(ideaHtml).join(''):'<div class="note">No ideas for this meal — try All.</div>';
-    host.innerHTML=html;
+    if(!hasCycle()){
+      var html='<div class="note" style="margin:0 0 10px">Your saved meals + ideas to try.</div>';
+      html+=chipRow(KMEALOPTS,_kfMeal,'setKFMeal');
+      var mine=(S.recipes||[]).filter(function(r){return _kfMeal==='all'||(r.meals&&r.meals.indexOf(_kfMeal)>=0);});
+      html+='<div class="ksec">Your recipes</div>'+(mine.length?mine.map(recipeCard).join(''):'<div class="note">No recipes for this meal yet. Add some in the Recipe book.</div>');
+      var allI=[];Object.keys(PHASE_IDEAS).forEach(function(k){PHASE_IDEAS[k].forEach(function(it){allI.push(it);});});
+      var ideasE=allI.filter(function(it){return _kfMeal==='all'||it.m===_kfMeal;}).slice(0,8);
+      html+='<div class="ksec">Ideas to try</div>'+(ideasE.length?ideasE.map(ideaHtml).join(''):'<div class="note">Try All.</div>');
+      host.innerHTML=html;
+    }else{
+      var ph=cycleInfo().phase;
+      var html='<div class="note" style="margin:0 0 10px">You are in <b style="color:'+ph.color+'">'+ph.name+'</b> (day '+cycleInfo().day+'). Here is what suits your body today.</div>';
+      if(ph.key==='menstrual'){var er=(S.recipes||[]).filter(function(r){return r.spoons&&r.spoons<=2;}),ei=(PHASE_IDEAS[ph.key]||[]).filter(function(it){return EASY_IDEA_FIDS[it.fid];});html+='<div class="ksec">Low-spoon for a low-energy day</div>'+((er.length||ei.length)?er.map(recipeCard).join('')+ei.map(ideaHtml).join(''):'<div class="note">Tag recipes low-spoon and they show here on menstrual days.</div>');}
+      html+=chipRow(KMEALOPTS,_kfMeal,'setKFMeal');
+      var mine=(S.recipes||[]).filter(function(r){var pOk=!r.phases||!r.phases.length||r.phases.indexOf(ph.key)>=0;var mOk=_kfMeal==='all'||(r.meals&&r.meals.indexOf(_kfMeal)>=0);return pOk&&mOk;});
+      html+='<div class="ksec">Your recipes for '+ph.name+'</div>';
+      html+=mine.length?mine.map(recipeCard).join(''):'<div class="note">No saved recipes tagged for this'+(_kfMeal!=='all'?' meal +':'')+' phase yet. Add some in the Recipe book and tag their phases.</div>';
+      var ideas=(PHASE_IDEAS[ph.key]||[]).filter(function(it){return _kfMeal==='all'||it.m===_kfMeal;});
+      html+='<div class="ksec">Try something new - '+ph.name+'</div>';
+      html+=ideas.length?ideas.map(ideaHtml).join(''):'<div class="note">No ideas for this meal - try All.</div>';
+      host.innerHTML=html;
+    }
   }else{
     var phaseOpts=[['all','Any phase']].concat(PHASES.map(function(p){return [p.key,p.name];}));
     var html='<input id="kbSearch" placeholder="search your recipes…" value="'+esc(_kSearch)+'" oninput="kSearchInput(this.value)"><div style="height:10px"></div>';
@@ -1291,14 +1310,55 @@ function loadZXing(cb){if(window.ZXingBrowser){cb(true);return;}var sc=document.
 function startScan(){if(!navigator.onLine){flash('Barcode scanning needs internet.');return;}showEl('scanSheet');var body=document.getElementById('scanBody');body.innerHTML='<div class="loadmsg">Loading scanner…</div>';loadZXing(function(ok){if(!ok){body.innerHTML='<div class="loadmsg">Could not load the scanner here. Search by name instead.</div>';return;}body.innerHTML='<video id="scanVid" playsinline muted style="width:100%;border-radius:14px;background:#000;max-height:60vh"></video><div class="note" style="text-align:center">Point the camera at a barcode.</div>';try{window._zx=new window.ZXingBrowser.BrowserMultiFormatReader();window._zx.decodeFromVideoDevice(undefined,'scanVid',function(res,err){if(res){var code=res.getText();stopScan();lookupBarcode(code);}});}catch(e){body.innerHTML='<div class="loadmsg">Camera unavailable. Search by name instead.</div>';}});}
 function stopScan(){try{if(window._zx&&window._zx.reset)window._zx.reset();}catch(e){}hideEl('scanSheet');}
 
+/* ===== body & cycle modes ===== */
+function cycMode(){return S.cycleMode||'C';}
+function hasCycle(){return cycMode()!=='E';}
+function showFert(){var m=cycMode();return m==='A'||m==='B';}
+function fertConception(){return cycMode()==='A';}
+function isMeno(){return cycMode()==='D';}
+function fertileWindow(){var len=S.cycleLength||29;var ov=Math.max(11,len-14);return {ov:ov,start:Math.max(1,ov-5),end:Math.min(len,ov+1)};}
+var CYCLE_MODES=[
+ {k:'A',t:'Full cycle + fertility',d:'Periods, phases, predictions, and your fertile window with conception info.'},
+ {k:'B',t:'Cycle — biology only, no baby talk',d:'Full phases + your estrogen-peak window shown as pure biology (energy, libido, skin). No conception framing, no fertile alerts.'},
+ {k:'C',t:'Cycle — skip fertility',d:'Periods, phases, symptoms, predictions. Fertility hidden; ovulation shows only as a body phase. Zero fertility prompts.'},
+ {k:'D',t:'Perimenopause / menopause',d:'Winding-down or absent cycles: relaxed predictions, menopause symptoms, stage-aware insight.'},
+ {k:'E',t:'No menstrual cycle',d:'Turns the cycle off — becomes a symptom & health tracker (POTS, autoimmune, mood, sleep, pain) for anyone without a cycle.'}
+];
+function openCycleSettings(){var b=document.getElementById('cycSettingsBody');b.innerHTML='<div class="sub">Choose how this section works for you. Change it anytime.</div>'+CYCLE_MODES.map(function(m){return '<div class="rcard" onclick="setCycleMode(\''+m.k+'\')" style="'+(cycMode()===m.k?'border-color:var(--candle)':'')+'"><div class="rn" style="font-size:16px">'+(cycMode()===m.k?'● ':'○ ')+m.t+'</div><div class="rmac" style="color:var(--muted);line-height:1.45">'+m.d+'</div></div>';}).join('');showEl('cycSettingsSheet');}
+function setCycleMode(k){S.cycleMode=k;persist();hideEl('cycSettingsSheet');renderAll();flash('Updated.');}
+function closeCycSettings(){hideEl('cycSettingsSheet');}
+
 function renderCycle(){
+  var lbl=hasCycle()?'Cycle':'Body';
+  var tl=document.getElementById('cycleTabLabel');if(tl)tl.textContent=lbl;
+  var ct=document.getElementById('cycTitle');if(ct)ct.textContent=lbl;
+  var ce=document.getElementById('cycEyebrow');if(ce)ce.textContent=hasCycle()?'Your body, tracked':'Your symptoms & health';
+  function setDisp(id,on){var el=document.getElementById(id);if(el)el.style.display=on?'':'none';}
+  setDisp('cycRingCard',hasCycle());setDisp('cycPhaseCard',hasCycle());setDisp('cycNote',hasCycle());
+  if(!hasCycle()){
+    document.getElementById('cycleFert').innerHTML='';
+    document.getElementById('cycleHeadsUp').innerHTML='';
+    document.getElementById('cycBodyH').textContent='Tracking your body';
+    document.getElementById('cycleBodySub').textContent='Symptom & health tracking';
+    document.getElementById('cycleScience').textContent='Log your symptoms daily — POTS, autoimmune, mood, sleep, energy, pain — and watch your patterns build on the calendar and in Patterns. Everything here helps you understand and support your body.';
+    return;
+  }
   var ci=cycleInfo(),st=cycleStats(),mp=moonPhase(todayKey());
   document.getElementById('cycleRingBox').innerHTML=cycleRingSVG(ci);
   document.getElementById('cyclePhaseLine').textContent=ci.phase.name+' · day '+ci.day+' · '+mp.emoji+' '+mp.name+' Moon';
-  var dtp=nextPeriodInDays();
-  document.getElementById('cycleNext').innerHTML=isPeriodDay(todayKey())?'On your period · day '+periodDayNum():(dtp>0?'Next period in ~<b style="color:#E59DAE">'+dtp+'</b> day'+(dtp>1?'s':'')+' · ~'+st.len+'-day cycle':(dtp===0?'Period likely today':'~'+(-dtp)+' day'+(-dtp!==1?'s':'')+' past your average'));
+  var dtp=nextPeriodInDays(),nextHtml;
+  if(isMeno()){nextHtml=(st.logged>=2?'~'+st.len+'-day cycle (loose) · this stage is about symptom insight':'Perimenopause / menopause — tracking your symptoms + where your body is at');}
+  else{nextHtml=isPeriodDay(todayKey())?'On your period · day '+periodDayNum():(dtp>0?'Next period in ~<b style="color:#E59DAE">'+dtp+'</b> day'+(dtp>1?'s':'')+' · ~'+st.len+'-day cycle':(dtp===0?'Period likely today':'~'+(-dtp)+' day'+(-dtp!==1?'s':'')+' past your average'));}
+  document.getElementById('cycleNext').innerHTML=nextHtml;
+  var fh='';
+  if(showFert()){var fw=fertileWindow(),inWin=ci.day>=fw.start&&ci.day<=fw.end;
+    if(fertConception()){fh='<div class="card" style="border-left:2px solid #6FA88C"><h3>Fertile window</h3><div class="note" style="margin:0">Estimated ovulation ~day '+fw.ov+'; fertile window ~days '+fw.start+'–'+fw.end+'.'+(inWin?' <b style="color:#6FA88C">You’re in it now.</b>':'')+'</div></div>';}
+    else{fh='<div class="card" style="border-left:2px solid #E8B96A"><h3>Estrogen-peak window</h3><div class="note" style="margin:0">~Days '+fw.start+'–'+fw.end+' (around day '+fw.ov+'): estrogen + testosterone peak — your highest energy, libido, magnetism, glowing skin.'+(inWin?' <b style="color:#E8B96A">You’re in it now.</b>':'')+' Pure biology, no baby talk.</div></div>';}
+  }
+  document.getElementById('cycleFert').innerHTML=fh;
   var hu=cycleHeadsUp();
   document.getElementById('cycleHeadsUp').innerHTML=hu.map(function(h){return '<div class="card" style="border-left:2px solid var(--ember);background:rgba(224,116,60,.06)"><div style="display:flex;gap:11px"><div style="font-size:20px">'+h.i+'</div><div><div style="font-family:var(--temple);letter-spacing:.05em;color:var(--moon);font-size:15px">'+h.t+'</div><div class="note" style="margin-top:3px">'+h.d+'</div></div></div></div>';}).join('');
+  document.getElementById('cycBodyH').textContent='Your body right now';
   document.getElementById('cycleBodySub').textContent=ci.phase.name+' · '+ci.phase.moon;
   document.getElementById('cycleScience').textContent=SCIENCE[ci.phase.key]||'';
   var g=GUIDE[ci.phase.key];var rows=[{i:'🍽',l:'Eat',t:g.eat},{i:'🏋️',l:'Move',t:g.move},{i:'☕',l:'Caffeine',t:g.caf},{i:'✨',l:'Skin',t:g.skin},{i:'💊',l:'Supplements',t:g.supp}];
@@ -1320,8 +1380,8 @@ function symRow(sy,val){
 function renderCycleLog(){
   var dk=_logDate,cl=cycleLogFor(dk),b=document.getElementById('cycleLogBody');
   var h='<div class="datestrip"><button class="dnav" onclick="logShift(-1)">‹</button><div class="dlabel"><div class="dl1">'+dateLabel(dk)+'</div><div class="dl2">'+dateSub(dk)+' · day '+dayNumFor(dk)+' · '+phaseForDay(dayNumFor(dk)).name+'</div></div><button class="dnav" onclick="logShift(1)">›</button></div>';
-  h+='<label class="fl">Flow</label><div class="mealpick" style="flex-wrap:wrap">'+FLOW.map(function(fn,i){return '<button class="'+(cl.flow===i?'on':'')+'" onclick="setFlow('+i+')">'+fn+'</button>';}).join('')+'</div>';
-  CYCLE_SYM.forEach(function(grp){h+='<div class="ksec">'+grp.label+'</div>';grp.syms.forEach(function(sy){h+=symRow(sy,cl.sym[sy.id]);});});
+  if(hasCycle())h+='<label class="fl">Flow</label><div class="mealpick" style="flex-wrap:wrap">'+FLOW.map(function(fn,i){return '<button class="'+(cl.flow===i?'on':'')+'" onclick="setFlow('+i+')">'+fn+'</button>';}).join('')+'</div>';
+  CYCLE_SYM.forEach(function(grp){if(grp.key==='period'&&!hasCycle())return;if(grp.key==='meno'&&!isMeno())return;h+='<div class="ksec">'+grp.label+'</div>';grp.syms.forEach(function(sy){h+=symRow(sy,cl.sym[sy.id]);});});
   h+='<div style="margin-top:14px"><label class="fl">Notes</label><textarea id="cl_note" rows="2" oninput="setLogNote(this.value)">'+esc(cl.note)+'</textarea></div>';
   h+='<button class="act" style="width:100%;margin-top:14px" onclick="closeCycleLog()">Done</button>';
   b.innerHTML=h;
@@ -1343,12 +1403,12 @@ function renderCalendar(){
   var first=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate(),tk=todayKey(),pred=predictedPeriodSet(),html='';
   for(var i=0;i<first;i++)html+='<div class="mcell empty"></div>';
   for(var d=1;d<=dim;d++){var dk=dkOf(y,m,d),ph=phaseForDay(dayNumFor(dk)),cl=(S.cycleLog||{})[dk],flow=cl&&cl.flow||0,symN=cl&&cl.sym?Object.keys(cl.sym).length:0;
-    var bg=flow>=1?FLOW_COLOR[flow]:ph.color,op=flow>=1?'.9':'.32',marks='';
-    if(pred[dk]&&flow<1)marks+='<div class="cdot" style="border:1.5px solid #E59DAE;background:transparent"></div>';
+    var bg=flow>=1?FLOW_COLOR[flow]:(hasCycle()?ph.color:'#2A2440'),op=flow>=1?'.9':(hasCycle()?'.32':'.16'),marks='';
+    if(hasCycle()&&pred[dk]&&flow<1)marks+='<div class="cdot" style="border:1.5px solid #E59DAE;background:transparent"></div>';
     if(symN)marks+='<div class="cdot" style="background:var(--candle)"></div>';
     html+='<div class="mcell'+(dk===tk?' today':'')+'" onclick="calPick(\''+dk+'\')"><div class="tint" style="background:'+bg+';opacity:'+op+'"></div><div class="dn">'+d+'</div><div class="cmk">'+marks+'</div></div>';}
   document.getElementById('calGrid').innerHTML=html;
-  document.getElementById('calLegend').innerHTML='<span><i style="background:#9B5C6E"></i>period</span><span><i style="border:1.5px solid #E59DAE;background:transparent"></i>predicted</span><span><i style="background:var(--candle)"></i>symptoms</span>';
+  document.getElementById('calLegend').innerHTML=(hasCycle()?'<span><i style="background:#9B5C6E"></i>period</span><span><i style="border:1.5px solid #E59DAE;background:transparent"></i>predicted</span>':'')+'<span><i style="background:var(--candle)"></i>symptoms</span>';
   var st=cycleStats();document.getElementById('calStats').innerHTML='~'+st.len+'-day cycle · ~'+st.plen+'-day period · from '+st.logged+' logged period'+(st.logged!==1?'s':'');
 }
 function calPick(dk){closeCalendar();openCycleLog(dk);}
@@ -1401,7 +1461,8 @@ var CYCLE_SYM=[
  {key:'pots',label:'POTS / autonomic',syms:[{id:'dizziness',label:'Dizzy / lightheaded',type:'scale'},{id:'palpitations',label:'Racing heart / palpitations',type:'scale'},{id:'crash',label:'Crash / fatigue',type:'scale'},{id:'brainfog',label:'Brain fog',type:'scale'},{id:'saltcrave',label:'Salt cravings',type:'bool'},{id:'tempswing',label:'Temperature swings',type:'bool'}]},
  {key:'auto',label:'Autoimmune / flare',syms:[{id:'flare',label:'Overall flare',type:'scale'},{id:'jointpain',label:'Joint pain',type:'scale'},{id:'cheekflare',label:'Cheek flare',type:'bool'},{id:'skin',label:'Skin flare',type:'scale'},{id:'swelling',label:'Swelling',type:'bool'},{id:'histreact',label:'Histamine reaction',type:'bool'}]},
  {key:'mood',label:'Mood, sleep & body',syms:[{id:'mood',label:'Mood',type:'scale',lo:'low',hi:'bright'},{id:'anxiety',label:'Anxiety',type:'scale'},{id:'irritable',label:'Irritability',type:'scale'},{id:'energy',label:'Energy',type:'scale',lo:'drained',hi:'lit'},{id:'sleep',label:'Sleep quality',type:'scale',lo:'poor',hi:'great'},{id:'headache',label:'Headache',type:'scale'},{id:'bloating',label:'Bloating',type:'scale'},{id:'nausea',label:'Nausea',type:'bool'},{id:'breast',label:'Breast tenderness',type:'bool'},{id:'cravings',label:'Food cravings',type:'bool'}]},
- {key:'sexual',label:'Sexual health',syms:[{id:'libido',label:'Libido',type:'scale',lo:'low',hi:'high'},{id:'sexual',label:'Sexual activity',type:'bool'},{id:'sexpain',label:'Discomfort during sex',type:'bool'},{id:'discharge',label:'Discharge',type:'select',opts:['dry','sticky','creamy','egg-white','unusual']}]}
+ {key:'sexual',label:'Sexual health',syms:[{id:'libido',label:'Libido',type:'scale',lo:'low',hi:'high'},{id:'sexual',label:'Sexual activity',type:'bool'},{id:'sexpain',label:'Discomfort during sex',type:'bool'},{id:'discharge',label:'Discharge',type:'select',opts:['dry','sticky','creamy','egg-white','unusual']}]},
+ {key:'meno',label:'Menopause',syms:[{id:'hotflash',label:'Hot flashes',type:'scale'},{id:'nightsweat',label:'Night sweats',type:'bool'},{id:'vagdry',label:'Vaginal dryness',type:'bool'},{id:'menomood',label:'Mood swings',type:'scale'},{id:'menojoint',label:'Joint aches',type:'scale'}]}
 ];
 function symById(id){for(var i=0;i<CYCLE_SYM.length;i++){var g=CYCLE_SYM[i];for(var j=0;j<g.syms.length;j++)if(g.syms[j].id===id)return g.syms[j];}return null;}
 var SCIENCE={
@@ -1410,7 +1471,7 @@ var SCIENCE={
  ovulation:'Estrogen peaks then drops as you ovulate; testosterone bumps. The textbook says peak-everything — but YOUR data says this is your least-stable week: highest resting HR, lowest HRV, most palpitations. The estrogen peak also raises histamine. Magnetic, yes — but pace, hydrate hard, half-caf.',
  luteal:'Progesterone dominates early (calming, warming, sleep-supporting), then BOTH hormones drop sharply in the final days. Insulin sensitivity falls (blood sugar swings harder), cortisol + sebum rise, and the estrogen cliff spikes histamine — your late-luteal cheek flare. Complex carbs, magnesium + salt steady the back half.'
 };
-function cycleHeadsUp(){var ci=cycleInfo(),out=[],dtp=nextPeriodInDays();
+function cycleHeadsUp(){if(!hasCycle())return [];var ci=cycleInfo(),out=[],dtp=nextPeriodInDays();if(cycMode()==='A'){var fw=fertileWindow();if(ci.day>=fw.start&&ci.day<=fw.end)out.push({i:'🌱',t:'Fertile window',d:'Estimated ovulation ~day '+fw.ov+'. This is your fertile stretch — for planning or avoiding pregnancy.'});}
  if(ci.phase.key==='luteal'&&ci.day>=ci.len-4)out.push({i:'🌹',t:'Late-luteal flare window',d:'Estrogen dropping → histamine rising. Start quercetin, strip skincare to barrier basics, nettle + magnesium. Cheek-flare risk highest now.'});
  if(ci.phase.key==='ovulation')out.push({i:'⚠',t:'Ovulation — least-stable window',d:'Resting HR runs high, HRV low. Salt + fluids hardest, half-caf, gentle movement only.'});
  if(dtp>=1&&dtp<=4)out.push({i:'🩸',t:'Period likely in ~'+dtp+' day'+(dtp>1?'s':''),d:'Batch a warm iron-rich meal, start red raspberry leaf, plan lighter days.'});
