@@ -273,6 +273,9 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 .serv .svprev .pv .pl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .mealpick{display:flex;gap:6px;margin:10px 0;flex-wrap:wrap}
 .mealpick button{flex:1;min-width:70px;border:1px solid var(--line);background:rgba(236,233,244,.04);color:var(--muted);border-radius:10px;padding:9px 4px;font-size:13px;cursor:pointer}
+.tags{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}
+.tags button{border:1px solid var(--line);background:rgba(236,233,244,.04);color:var(--muted);border-radius:30px;padding:9px 14px;font-size:14px;cursor:pointer;white-space:nowrap}
+.tags button.on{background:var(--candle);color:#1a1206;border-color:var(--candle);font-weight:600}
 .mealpick button.on{background:var(--candle);color:#1a1206;border-color:var(--candle);font-weight:600}
 .backdrop{position:fixed;inset:0;z-index:125;background:rgba(4,5,12,.55);display:none}
 .backdrop.open{display:block}
@@ -295,6 +298,13 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
     <div class="eyebrow">What you carry today</div>
     <div class="pagetitle">Today</div>
     <div class="getbetter" id="betterLine"></div>
+
+    <div class="card" id="todayCheckinCard" onclick="openCycleLog(todayKey())" style="cursor:pointer;border-color:rgba(232,185,106,.4)">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:14px">
+        <div><h3 style="margin:0">Daily Check-In</h3><div class="sub" style="margin:3px 0 0" id="todayCheckinSub">tap to check in</div></div>
+        <div id="todayFlame" style="text-align:center;flex:0 0 auto"></div>
+      </div>
+    </div>
 
     <div class="card">
       <div style="display:flex;gap:16px;align-items:center;justify-content:space-around;flex-wrap:wrap">
@@ -619,7 +629,7 @@ var FAV_SEED=[
 ];
 var defaults={
   lastPeriodStart:'2026-05-23', cycleLength:29, cycleUpdatedAt:0,
-  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, cycleMode:'C', trackedSyms:null, trackedEvents:null, drinksLog:{}, drinkTypes:[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}], alchemyLog:{}, substances:[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}], protocol:{active:false,start:null,end:null,days:{}}, symptoms:{}, supps:{}, counts:[], rites:{},
+  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, cycleMode:'C', trackedSyms:null, trackedEvents:null, customEvents:[], drinksLog:{}, drinkTypes:[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}], alchemyLog:{}, substances:[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}], protocol:{active:false,start:null,end:null,days:{}}, symptoms:{}, supps:{}, counts:[], rites:{},
   favorites:FAV_SEED.slice(), lastSync:0
 };
 var S=Object.assign({},defaults,JSON.parse(localStorage.getItem(EKEY)||'{}'));
@@ -973,7 +983,7 @@ function renderHeader(){
 
 function renderToday(){
   var ci=cycleInfo(),tg=targets(),tot=macroTotals(),w=todayWater(),wg=waterGoal();
-  document.getElementById('betterLine').textContent=todaysQuote();
+  document.getElementById('betterLine').textContent=todaysQuote();var _sc=stabilityScore(todayKey()),_fl=flameLabel(_sc),_tf=document.getElementById('todayFlame');if(_tf)_tf.innerHTML=(_sc!=null?'<div style="font-family:var(--temple);font-size:30px;color:'+_fl[1]+';line-height:1">'+_sc+'</div><div class="tiny" style="color:'+_fl[1]+'">'+_fl[0]+'</div>':'<div style="font-size:28px;color:var(--candle)">›</div>');var _tcs=document.getElementById('todayCheckinSub');if(_tcs)_tcs.textContent=(_sc!=null?'your flame today · tap to update':'tap to check in — sleep, symptoms, exertion');
   document.getElementById('todayWaterRing').innerHTML=ring(w.ml/wg,(w.ml/1000).toFixed(1)+'L','water',(wg/1000).toFixed(1)+'L goal','#5FA8D3',132);
   document.getElementById('todayProteinRing').innerHTML=ring(tot.p/tg.p,Math.round(tot.p),'protein',tg.p+'g goal','#4FB68C',132);
   document.getElementById('todayMacroMini').innerHTML=
@@ -1035,7 +1045,7 @@ function renderDrinks(){
   var host=document.getElementById('drinkChips');if(!host)return;
   host.innerHTML=(S.drinkTypes||[]).map(function(t){return '<span class="chip" onclick="logDrink(\''+t.id+'\')">'+(t.emoji||'🥤')+' '+t.name+(t.caf?' <span class="cm" style="display:inline;color:var(--muted)">'+t.caf+'mg</span>':'')+'</span>';}).join('');
   var list=drinksDay(todayKey());
-  document.getElementById('drinkLog').innerHTML=list.length?list.map(function(d,i){return '<div class="logrow"><div>'+(d.emoji||'')+' '+d.name+'<span class="macros">'+(d.caf?d.caf+'mg caffeine · ':'')+(d.t||'')+'</span></div><div class="x" onclick="removeDrink('+i+')">×</div></div>';}).join(''):'<div class="note">Tap a drink to log it. (Smoothies stay in Meals — those are food.)</div>';
+  document.getElementById('drinkLog').innerHTML=list.length?list.map(function(d,i){return '<div class="logrow"><div>'+(d.emoji||'')+' '+d.name+'<span class="macros">'+(d.caf?d.caf+'mg caffeine · ':'')+(d.t||'')+'</span></div><div class="x" onclick="removeDrink('+i+')">×</div></div>';}).join(''):'<div class="note">Tap a drink to log it.</div>';
   var caf=dayCaffeine(todayKey()),note=hasCycle()?(CAFF_NOTE[cycleInfo().phase.key]||''):'';
   document.getElementById('caffLine').innerHTML='Caffeine today: <b style="color:var(--candle)">'+caf+' mg</b>'+(note?' · '+note:'');
 }
@@ -1442,29 +1452,32 @@ function renderCycleLog(){
   var dk=_logDate,cl=cycleLogFor(dk),b=document.getElementById('cycleLogBody');
   if(!cl.exertion)cl.exertion={};if(!cl.events)cl.events=[];if(!cl.sleep)cl.sleep={};if(!cl.mood)cl.mood=[];if(!cl.sex)cl.sex=[];
   var h='<div class="datestrip"><button class="dnav" onclick="logShift(-1)">‹</button><div class="dlabel"><div class="dl1">'+dateLabel(dk)+'</div><div class="dl2">'+dateSub(dk)+(hasCycle()?' · day '+dayNumFor(dk)+' · '+phaseForDay(dayNumFor(dk)).name:'')+'</div></div><button class="dnav" onclick="logShift(1)">›</button></div>';
-  var sc=stabilityScore(dk),sl=stabilityLabel(sc);
-  if(sc!=null)h+='<div class="card" style="margin:0 0 12px;text-align:center"><div class="tiny muted">Stability today · symptom-based (HRV later)</div><div style="font-family:var(--temple);font-size:34px;color:'+sl[1]+';line-height:1.1">'+sc+'</div><div style="color:'+sl[1]+'">'+sl[0]+'</div></div>';
+  var sc=stabilityScore(dk),fl=flameLabel(sc);
+  if(sc!=null)h+='<div class="card" style="margin:0 0 12px;text-align:center"><div class="tiny muted">Your flame today · from how your body is (HRV later)</div><div style="font-family:var(--temple);font-size:34px;color:'+fl[1]+';line-height:1.1">'+sc+'</div><div style="color:'+fl[1]+'">'+fl[0]+'</div></div>';
   h+='<div class="ksec">☀️ Morning</div>';
-  h+='<div class="svrow"><div><label class="fl">Sleep (hours)</label><input type="number" step="0.5" inputmode="decimal" value="'+(cl.sleep.h!=null?cl.sleep.h:'')+'" oninput="setSleepH(this.value)" placeholder="7.5"></div><div style="flex:1.4">'+sleepSeg(cl.sleep.q)+'</div></div>';
+  h+='<div class="svrow"><div><label class="fl">In bed</label><input type="time" value="'+(cl.sleep.bed||'')+'" onchange="setSleepBed(this.value)"></div><div><label class="fl">Woke up</label><input type="time" value="'+(cl.sleep.wake||'')+'" onchange="setSleepWake(this.value)"></div></div>';
+  var hib=hoursInBed(cl.sleep.bed,cl.sleep.wake);if(hib!=null)h+='<div class="note" style="margin-top:4px">~'+hib+' h in bed</div>';
+  h+=sleepSeg(cl.sleep.q);
   h+='<div class="ksec">🌙 Evening</div>';
-  if(hasCycle())h+='<label class="fl">Flow</label><div class="mealpick" style="flex-wrap:wrap">'+FLOW.map(function(fn,i){return '<button class="'+(cl.flow===i?'on':'')+'" onclick="setFlow('+i+')">'+fn+'</button>';}).join('')+'</div>';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><label class="fl" style="margin:0">Symptoms (0–3)</label><span class="cv" style="font-size:13.5px" onclick="everythingFine()">✓ everything fine</span></div>';
+  if(hasCycle())h+='<label class="fl">Flow</label><div class="tags">'+FLOW.map(function(fn,i){return '<button class="'+(cl.flow===i?'on':'')+'" onclick="setFlow('+i+')">'+fn+'</button>';}).join('')+'</div>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><label class="fl" style="margin:0">Symptoms (0–3)</label><span class="cv" style="font-size:13.5px" onclick="openTrackedSyms()">customize</span></div>';
   trackedSyms().forEach(function(id){var sy=symById(id);if(sy)h+=symSeg(sy,cl.sym[id]);});
-  h+='<div style="margin-top:4px"><button class="ghost" onclick="openTrackedSyms()">＋ customize symptoms</button></div>';
   h+='<div class="ksec">Exertion · 0–3</div>'+exSeg('p','Physical',cl.exertion.p)+exSeg('m','Mental',cl.exertion.m)+exSeg('e','Emotional',cl.exertion.e)+exSeg('s','Social',cl.exertion.s);
-  h+='<div class="ksec">Today I…</div><div class="mealpick" style="flex-wrap:wrap">'+trackedEvents().map(function(eid){var ev=eventById(eid);return ev?'<button class="'+(cl.events.indexOf(eid)>=0?'on':'')+'" onclick="toggleEvent(\''+eid+'\')">'+ev.emoji+' '+ev.label+'</button>':'';}).join('')+'</div><div style="margin-top:4px"><button class="ghost" onclick="openTrackedEvents()">＋ customize activities</button></div>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px"><div class="ksec" style="margin:0">Today I…</div><span class="cv" style="font-size:13.5px" onclick="openTrackedEvents()">customize</span></div><div class="tags">'+trackedEvents().map(function(eid){var ev=eventById(eid);return ev?'<button class="'+(cl.events.indexOf(eid)>=0?'on':'')+'" onclick="toggleEvent(\''+eid+'\')">'+ev.emoji+' '+ev.label+'</button>':'';}).join('')+'</div>';
   if(hasCycle()){
-    h+='<div class="ksec">Mood</div><div class="mealpick" style="flex-wrap:wrap">'+MOOD_TAGS.map(function(m){return '<button class="'+(cl.mood.indexOf(m)>=0?'on':'')+'" onclick="toggleMood(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
-    h+='<div class="ksec">Sex & drive</div><div class="mealpick" style="flex-wrap:wrap">'+SEX_TAGS.map(function(m){return '<button class="'+(cl.sex.indexOf(m)>=0?'on':'')+'" onclick="toggleSex(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
-    h+='<div class="ksec">Discharge</div><div class="mealpick" style="flex-wrap:wrap">'+DISCHARGE_OPTS.map(function(o){return '<button class="'+(cl.discharge===o?'on':'')+'" onclick="setDischarge(\''+o+'\')">'+o+'</button>';}).join('')+'</div>';
+    h+='<div class="ksec">Mood</div><div class="tags">'+MOOD_TAGS.map(function(m){return '<button class="'+(cl.mood.indexOf(m)>=0?'on':'')+'" onclick="toggleMood(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
+    h+='<div class="ksec">Sex & drive</div><div class="tags">'+SEX_TAGS.map(function(m){return '<button class="'+(cl.sex.indexOf(m)>=0?'on':'')+'" onclick="toggleSex(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
+    h+='<div class="ksec">Discharge</div><div class="tags">'+DISCHARGE_OPTS.map(function(o){return '<button class="'+(cl.discharge===o?'on':'')+'" onclick="setDischarge(\''+o+'\')">'+o+'</button>';}).join('')+'</div>';
   }
   h+='<div style="margin-top:14px"><label class="fl">Note</label><textarea id="cl_note" rows="2" oninput="setLogNote(this.value)" placeholder="anything else — deviations, context, how you feel">'+esc(cl.note)+'</textarea></div>';
   h+='<button class="act" style="width:100%;margin-top:14px" onclick="closeCycleLog()">Done</button>';
   b.innerHTML=h;
 }
 function setFlow(i){var cl=cycleLogFor(_logDate);cl.flow=i;persist();recomputeCycle();renderCycleLog();}
-function setSym(id,v){var cl=cycleLogFor(_logDate);if(v===0){delete cl.sym[id];}else cl.sym[id]=v;persist();renderCycleLog();}
-function setSleepH(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.h=parseFloat(v)||null;persist();}
+function setSym(id,v){var cl=cycleLogFor(_logDate);if(cl.sym[id]===v){delete cl.sym[id];}else cl.sym[id]=v;persist();renderCycleLog();}
+function setSleepBed(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.bed=v;persist();renderCycleLog();}
+function setSleepWake(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.wake=v;persist();renderCycleLog();}
+function hoursInBed(bed,wake){if(!bed||!wake)return null;function mn(t){var pp=t.split(':');return (+pp[0])*60+(+pp[1]);}var d=mn(wake)-mn(bed);if(d<0)d+=1440;return Math.round(d/60*10)/10;}
 function setSleepQ(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.q=v;persist();renderCycleLog();}
 function setExertion(k,v){var cl=cycleLogFor(_logDate);if(!cl.exertion)cl.exertion={};cl.exertion[k]=v;persist();renderCycleLog();}
 function toggleEvent(id){var cl=cycleLogFor(_logDate);if(!cl.events)cl.events=[];var i=cl.events.indexOf(id);if(i>=0)cl.events.splice(i,1);else cl.events.push(id);persist();renderCycleLog();}
@@ -1472,10 +1485,22 @@ function toggleMood(m){var cl=cycleLogFor(_logDate);if(!cl.mood)cl.mood=[];var i
 function toggleSex(m){var cl=cycleLogFor(_logDate);if(!cl.sex)cl.sex=[];var i=cl.sex.indexOf(m);if(i>=0)cl.sex.splice(i,1);else cl.sex.push(m);persist();renderCycleLog();}
 function setDischarge(o){var cl=cycleLogFor(_logDate);cl.discharge=(cl.discharge===o?'':o);persist();renderCycleLog();}
 function everythingFine(){cycleLogFor(_logDate).sym={};persist();renderCycleLog();}
-function openTrackedSyms(){var tr=trackedSyms();document.getElementById('trackSymBody').innerHTML='<div class="sub">Tap the symptoms you want in your check-in. Only these show — curate it to your body.</div><div class="mealpick" style="flex-wrap:wrap">'+MASTER_SYM.map(function(sy){return '<button class="'+(tr.indexOf(sy.id)>=0?'on':'')+'" onclick="toggleTrackSym(\''+sy.id+'\')">'+sy.label+'</button>';}).join('')+'</div><button class="act" style="width:100%;margin-top:14px" onclick="closeTrackSyms()">Done</button>';showEl('trackSymSheet');}
-function toggleTrackSym(id){if(!S.trackedSyms||!S.trackedSyms.length)S.trackedSyms=DEFAULT_TRACKED.slice();var i=S.trackedSyms.indexOf(id);if(i>=0)S.trackedSyms.splice(i,1);else S.trackedSyms.push(id);persist();openTrackedSyms();}
+function openTrackedSyms(){var tr=trackedSyms();
+  var inb=tr.map(function(id){var sy=symById(id);return sy?'<div class="rcard" style="display:flex;align-items:center;gap:6px;padding:11px 12px"><div style="flex:1">'+sy.label+'</div><button class="ghost" style="padding:8px 11px" onclick="moveTrackSym(\''+id+'\',-1)">▲</button><button class="ghost" style="padding:8px 11px" onclick="moveTrackSym(\''+id+'\',1)">▼</button><button class="ghost" style="padding:8px 11px" onclick="toggleTrackSym(\''+id+'\')">✕</button></div>':'';}).join('');
+  var pool=MASTER_SYM.filter(function(sy){return tr.indexOf(sy.id)<0;});
+  var add=pool.length?'<div class="ksec">Add more</div><div class="tags">'+pool.map(function(sy){return '<button onclick="toggleTrackSym(\''+sy.id+'\')">＋ '+sy.label+'</button>';}).join('')+'</div>':'';
+  document.getElementById('trackSymBody').innerHTML='<div class="sub">These show in your check-in, in this order. ▲▼ to reorder, ✕ to remove. Only these appear — make it yours.</div>'+(inb||'<div class="note">None yet — add some below.</div>')+add+'<button class="act" style="width:100%;margin-top:14px" onclick="closeTrackSyms()">Done</button>';showEl('trackSymSheet');}
+function moveTrackSym(id,dir){if(!S.trackedSyms||!S.trackedSyms.length)S.trackedSyms=trackedSyms().slice();var a=S.trackedSyms,i=a.indexOf(id);if(i<0)return;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;persist();openTrackedSyms();}
+function toggleTrackSym(id){if(!S.trackedSyms||!S.trackedSyms.length)S.trackedSyms=trackedSyms().slice();var i=S.trackedSyms.indexOf(id);if(i>=0)S.trackedSyms.splice(i,1);else S.trackedSyms.push(id);persist();openTrackedSyms();}
 function closeTrackSyms(){hideEl('trackSymSheet');renderCycleLog();}
-function openTrackedEvents(){var tr=trackedEvents();document.getElementById('trackEvBody').innerHTML='<div class="sub">Tap the activities + events you want as quick tags.</div><div class="mealpick" style="flex-wrap:wrap">'+MASTER_EVENTS.map(function(ev){return '<button class="'+(tr.indexOf(ev.id)>=0?'on':'')+'" onclick="toggleTrackEv(\''+ev.id+'\')">'+ev.emoji+' '+ev.label+'</button>';}).join('')+'</div><button class="act" style="width:100%;margin-top:14px" onclick="closeTrackEv()">Done</button>';showEl('trackEvSheet');}
+function openTrackedEvents(){var tr=trackedEvents();
+  var inb=tr.map(function(id){var ev=eventById(id);return ev?'<div class="rcard" style="display:flex;align-items:center;gap:6px;padding:11px 12px"><div style="flex:1">'+ev.emoji+' '+ev.label+'</div><button class="ghost" style="padding:8px 11px" onclick="moveTrackEv(\''+id+'\',-1)">▲</button><button class="ghost" style="padding:8px 11px" onclick="moveTrackEv(\''+id+'\',1)">▼</button><button class="ghost" style="padding:8px 11px" onclick="toggleTrackEv(\''+id+'\')">✕</button></div>':'';}).join('');
+  var pool=allEvents().filter(function(ev){return tr.indexOf(ev.id)<0;});
+  var add=pool.length?'<div class="ksec">Add more</div><div class="tags">'+pool.map(function(ev){return '<button onclick="toggleTrackEv(\''+ev.id+'\')">＋ '+ev.emoji+' '+ev.label+'</button>';}).join('')+'</div>':'';
+  add+='<div class="ksec">Create your own</div><div class="svrow"><div style="flex:0 0 76px"><label class="fl">Emoji</label><input id="newEvEmoji" placeholder="🏂"></div><div style="flex:1"><label class="fl">Activity</label><input id="newEvName" placeholder="Pilates, sauna, PT…"></div></div><button class="ghost" style="width:100%;margin-top:8px" onclick="addCustomEvent()">＋ create activity</button>';
+  document.getElementById('trackEvBody').innerHTML='<div class="sub">Quick tags for your check-in, in this order. ▲▼ reorder, ✕ remove, or add your own.</div>'+(inb||'<div class="note">None yet — add some below.</div>')+add+'<button class="act" style="width:100%;margin-top:14px" onclick="closeTrackEv()">Done</button>';showEl('trackEvSheet');}
+function moveTrackEv(id,dir){if(!S.trackedEvents||!S.trackedEvents.length)S.trackedEvents=trackedEvents().slice();var a=S.trackedEvents,i=a.indexOf(id);if(i<0)return;var j=i+dir;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;persist();openTrackedEvents();}
+function addCustomEvent(){var nm=document.getElementById('newEvName').value.trim();if(!nm){flash('Name it.');return;}var em=document.getElementById('newEvEmoji').value.trim()||'•';var id='e_'+Date.now();if(!S.customEvents)S.customEvents=[];S.customEvents.push({id:id,label:nm,emoji:em});if(!S.trackedEvents||!S.trackedEvents.length)S.trackedEvents=trackedEvents().slice();S.trackedEvents.push(id);persist();openTrackedEvents();}
 function toggleTrackEv(id){if(!S.trackedEvents||!S.trackedEvents.length)S.trackedEvents=DEFAULT_EVENTS.slice();var i=S.trackedEvents.indexOf(id);if(i>=0)S.trackedEvents.splice(i,1);else S.trackedEvents.push(id);persist();openTrackedEvents();}
 function closeTrackEv(){hideEl('trackEvSheet');renderCycleLog();}
 function setLogNote(v){cycleLogFor(_logDate).note=v;persist();}
@@ -1560,15 +1585,16 @@ var MASTER_EVENTS=[
  {id:'infusion',label:'Infusion',emoji:'💧'},{id:'massage',label:'Massage',emoji:'💆'},{id:'antibiotics',label:'Antibiotics',emoji:'💊'},{id:'albuterol',label:'Albuterol',emoji:'🫁'},{id:'infection',label:'Infection',emoji:'🦠'},{id:'bigstress',label:'Big stress',emoji:'😣'},{id:'travel',label:'Travel',emoji:'✈️'}
 ];
 var DEFAULT_EVENTS=['walk','yoga','strength','infusion','massage','antibiotics','albuterol','infection'];
-var MOOD_TAGS=['calm','happy','energetic','frisky','mood swings','irritated','sad','anxious','depressed','guilty','low energy','apathetic','confused','self-critical'];
+var MOOD_TAGS=['calm','content','happy','frisky','low','flat / numb','anxious','irritable','sad','overwhelmed'];
 var SEX_TAGS=['no sex','protected','unprotected','oral','anal','masturbation','sensual touch','toys','orgasm','no orgasm','high drive','low drive'];
 var DISCHARGE_OPTS=['none','creamy','watery','sticky','egg-white','spotting','unusual','clumpy'];
 function symById(id){for(var i=0;i<MASTER_SYM.length;i++)if(MASTER_SYM[i].id===id)return MASTER_SYM[i];return null;}
-function eventById(id){for(var i=0;i<MASTER_EVENTS.length;i++)if(MASTER_EVENTS[i].id===id)return MASTER_EVENTS[i];return null;}
+function eventById(id){var all=MASTER_EVENTS.concat(S.customEvents||[]);for(var i=0;i<all.length;i++)if(all[i].id===id)return all[i];return null;}
+function allEvents(){return MASTER_EVENTS.concat(S.customEvents||[]);}
 function trackedSyms(){return S.trackedSyms&&S.trackedSyms.length?S.trackedSyms:DEFAULT_TRACKED;}
 function trackedEvents(){return S.trackedEvents&&S.trackedEvents.length?S.trackedEvents:DEFAULT_EVENTS;}
 function stabilityScore(dk){var cl=S.cycleLog[dk];if(!cl)return null;var sym=cl.sym||{},burden=0,has=false;Object.keys(sym).forEach(function(k){var v=sym[k];if(typeof v==='number'){burden+=v;has=true;}});var ex=cl.exertion||{},exsum=(ex.p||0)+(ex.m||0)+(ex.e||0)+(ex.s||0);var slq=(cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;if(!has&&!exsum&&slq==null)return null;var score=100-burden*4-exsum*2+(slq!=null?(slq-1.5)*4:0);return Math.max(0,Math.min(100,Math.round(score)));}
-function stabilityLabel(sc){if(sc==null)return ['—','var(--muted)'];if(sc>=75)return ['Good','#4FB68C'];if(sc>=50)return ['Moderate','#E8B96A'];if(sc>=30)return ['Low','#E0743C'];return ['Crash risk','#9B5C6E'];}
+function flameLabel(sc){if(sc==null)return ['—','var(--muted)'];if(sc>=80)return ['Burning bright','#4FB68C'];if(sc>=60)return ['Steady','#6FA88C'];if(sc>=40)return ['Low','#E8B96A'];if(sc>=25)return ['Flickering','#E0743C'];return ['Embers','#9B5C6E'];}
 var SCIENCE={
  menstrual:'Estrogen + progesterone are at their floor; prostaglandins (the cramping chemicals) peak, constricting vessels and triggering contractions. You lose ~15–30mg of iron with the bleed, pain perception runs high, and your data shows this is your worst crash + fog window. Your body is in active repair — rest is the strategy, not lost time.',
  follicular:'Estrogen rises fast, building energy and new brain connections. Insulin sensitivity is high (you use carbs efficiently) and estrogen strengthens your skin barrier + collagen. This is your steadiest, strongest window — best HRV + stability. Front-load the hard things here.',
@@ -1610,7 +1636,7 @@ function addCount(){
 function syncPayload(){
   return {_ember:true,version:1,exportedAt:new Date().toISOString(),
     lastPeriodStart:S.lastPeriodStart,cycleLength:S.cycleLength,cycleUpdatedAt:S.cycleUpdatedAt,
-    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,cycleLog:S.cycleLog,trackedSyms:S.trackedSyms,trackedEvents:S.trackedEvents,drinksLog:S.drinksLog,drinkTypes:S.drinkTypes,alchemyLog:S.alchemyLog,substances:S.substances,protocol:S.protocol,symptoms:S.symptoms,supps:S.supps,
+    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,cycleLog:S.cycleLog,trackedSyms:S.trackedSyms,trackedEvents:S.trackedEvents,customEvents:S.customEvents,drinksLog:S.drinksLog,drinkTypes:S.drinkTypes,alchemyLog:S.alchemyLog,substances:S.substances,protocol:S.protocol,symptoms:S.symptoms,supps:S.supps,
     counts:S.counts,rites:S.rites,favorites:S.favorites};
 }
 function syncBlob(){return new Blob([JSON.stringify(syncPayload(),null,0)],{type:'application/json'});}
