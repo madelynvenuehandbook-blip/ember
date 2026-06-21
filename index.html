@@ -417,7 +417,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       <div style="text-align:center"><div class="sub" style="margin:0" id="cyclePhaseLine"></div><div id="cycleNext" class="note" style="margin-top:4px"></div></div>
     </div>
     <div class="toolrow">
-      <button class="act" onclick="openCycleLog(todayKey())">＋ Log today</button>
+      <button class="act" onclick="openCycleLog(todayKey())">＋ Daily check-in</button>
       <button class="ghost" onclick="openCalendar()">📅 Calendar</button>
       <button class="ghost" onclick="openCycleInsights()">📊 Patterns</button>
     </div>
@@ -515,7 +515,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 </div>
 
 <div class="sheet" id="cycleLogSheet">
-  <div class="sheet-h"><div class="st">Log your day</div><div class="sx" onclick="closeCycleLog()">×</div></div>
+  <div class="sheet-h"><div class="st">Daily check-in</div><div class="sx" onclick="closeCycleLog()">×</div></div>
   <div class="sheet-b" id="cycleLogBody"></div>
 </div>
 
@@ -538,6 +538,16 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 <div class="sheet" id="cycSettingsSheet">
   <div class="sheet-h"><div class="st">Body &amp; cycle</div><div class="sx" onclick="closeCycSettings()">×</div></div>
   <div class="sheet-b" id="cycSettingsBody"></div>
+</div>
+
+<div class="sheet" id="trackSymSheet">
+  <div class="sheet-h"><div class="st">My symptoms</div><div class="sx" onclick="closeTrackSyms()">×</div></div>
+  <div class="sheet-b" id="trackSymBody"></div>
+</div>
+
+<div class="sheet" id="trackEvSheet">
+  <div class="sheet-h"><div class="st">My activities</div><div class="sx" onclick="closeTrackEv()">×</div></div>
+  <div class="sheet-b" id="trackEvBody"></div>
 </div>
 
 <div class="sheet" id="alchProtoSheet">
@@ -609,7 +619,7 @@ var FAV_SEED=[
 ];
 var defaults={
   lastPeriodStart:'2026-05-23', cycleLength:29, cycleUpdatedAt:0,
-  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, cycleMode:'C', drinksLog:{}, drinkTypes:[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}], alchemyLog:{}, substances:[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}], protocol:{active:false,start:null,end:null,days:{}}, symptoms:{}, supps:{}, counts:[], rites:{},
+  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, cycleMode:'C', trackedSyms:null, trackedEvents:null, drinksLog:{}, drinkTypes:[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}], alchemyLog:{}, substances:[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}], protocol:{active:false,start:null,end:null,days:{}}, symptoms:{}, supps:{}, counts:[], rites:{},
   favorites:FAV_SEED.slice(), lastSync:0
 };
 var S=Object.assign({},defaults,JSON.parse(localStorage.getItem(EKEY)||'{}'));
@@ -1425,25 +1435,49 @@ var _logDate=null;
 function openCycleLog(dk){_logDate=dk;renderCycleLog();showEl('cycleLogSheet');}
 function closeCycleLog(){hideEl('cycleLogSheet');renderCycle();renderToday();}
 function logShift(d){_logDate=shiftDateKey(_logDate,d);renderCycleLog();}
-function symRow(sy,val){
-  if(sy.type==='scale'){var b='';for(var i=0;i<=5;i++){b+='<button class="'+(val===i?'sel':'')+'" onclick="setSym(\''+sy.id+'\','+i+')">'+i+'</button>';}return '<div class="slide"><div class="sl-t"><b>'+sy.label+'</b><span class="tiny muted">'+(sy.lo?sy.lo+' → '+sy.hi:'0 → 5')+'</span></div><div class="seg">'+b+'</div></div>';}
-  if(sy.type==='bool'){return '<div class="toggle'+(val?' on':'')+'" onclick="setSymBool(\''+sy.id+'\')"><div class="sw"></div><div>'+sy.label+'</div></div>';}
-  if(sy.type==='select'){return '<div style="margin:10px 0"><label class="fl">'+sy.label+'</label><div class="mealpick" style="flex-wrap:wrap">'+sy.opts.map(function(o){return '<button class="'+(val===o?'on':'')+'" onclick="setSymStr(\''+sy.id+'\',\''+o+'\')">'+o+'</button>';}).join('')+'</div></div>';}
-  return '';
-}
+function symSeg(sy,val){var b='';for(var i=0;i<=3;i++){b+='<button class="'+(val===i?'sel':'')+'" onclick="setSym(\''+sy.id+'\','+i+')">'+i+'</button>';}return '<div class="slide"><div class="sl-t"><b>'+sy.label+'</b><span class="tiny muted">0 → 3</span></div><div class="seg">'+b+'</div></div>';}
+function exSeg(k,label,val){var b='';for(var i=0;i<=3;i++){b+='<button class="'+(val===i?'sel':'')+'" onclick="setExertion(\''+k+'\','+i+')">'+i+'</button>';}return '<div class="slide"><div class="sl-t"><b>'+label+'</b><span class="tiny muted">0 none → 3 a lot</span></div><div class="seg">'+b+'</div></div>';}
+function sleepSeg(val){var b='';for(var i=0;i<=3;i++){b+='<button class="'+(val===i?'sel':'')+'" onclick="setSleepQ('+i+')">'+i+'</button>';}return '<div class="slide"><div class="sl-t"><b>Sleep quality</b><span class="tiny muted">0 awful → 3 great</span></div><div class="seg">'+b+'</div></div>';}
 function renderCycleLog(){
   var dk=_logDate,cl=cycleLogFor(dk),b=document.getElementById('cycleLogBody');
-  var h='<div class="datestrip"><button class="dnav" onclick="logShift(-1)">‹</button><div class="dlabel"><div class="dl1">'+dateLabel(dk)+'</div><div class="dl2">'+dateSub(dk)+' · day '+dayNumFor(dk)+' · '+phaseForDay(dayNumFor(dk)).name+'</div></div><button class="dnav" onclick="logShift(1)">›</button></div>';
+  if(!cl.exertion)cl.exertion={};if(!cl.events)cl.events=[];if(!cl.sleep)cl.sleep={};if(!cl.mood)cl.mood=[];if(!cl.sex)cl.sex=[];
+  var h='<div class="datestrip"><button class="dnav" onclick="logShift(-1)">‹</button><div class="dlabel"><div class="dl1">'+dateLabel(dk)+'</div><div class="dl2">'+dateSub(dk)+(hasCycle()?' · day '+dayNumFor(dk)+' · '+phaseForDay(dayNumFor(dk)).name:'')+'</div></div><button class="dnav" onclick="logShift(1)">›</button></div>';
+  var sc=stabilityScore(dk),sl=stabilityLabel(sc);
+  if(sc!=null)h+='<div class="card" style="margin:0 0 12px;text-align:center"><div class="tiny muted">Stability today · symptom-based (HRV later)</div><div style="font-family:var(--temple);font-size:34px;color:'+sl[1]+';line-height:1.1">'+sc+'</div><div style="color:'+sl[1]+'">'+sl[0]+'</div></div>';
+  h+='<div class="ksec">☀️ Morning</div>';
+  h+='<div class="svrow"><div><label class="fl">Sleep (hours)</label><input type="number" step="0.5" inputmode="decimal" value="'+(cl.sleep.h!=null?cl.sleep.h:'')+'" oninput="setSleepH(this.value)" placeholder="7.5"></div><div style="flex:1.4">'+sleepSeg(cl.sleep.q)+'</div></div>';
+  h+='<div class="ksec">🌙 Evening</div>';
   if(hasCycle())h+='<label class="fl">Flow</label><div class="mealpick" style="flex-wrap:wrap">'+FLOW.map(function(fn,i){return '<button class="'+(cl.flow===i?'on':'')+'" onclick="setFlow('+i+')">'+fn+'</button>';}).join('')+'</div>';
-  CYCLE_SYM.forEach(function(grp){if(grp.key==='period'&&!hasCycle())return;if(grp.key==='meno'&&!isMeno())return;h+='<div class="ksec">'+grp.label+'</div>';grp.syms.forEach(function(sy){h+=symRow(sy,cl.sym[sy.id]);});});
-  h+='<div style="margin-top:14px"><label class="fl">Notes</label><textarea id="cl_note" rows="2" oninput="setLogNote(this.value)">'+esc(cl.note)+'</textarea></div>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><label class="fl" style="margin:0">Symptoms (0–3)</label><span class="cv" style="font-size:13.5px" onclick="everythingFine()">✓ everything fine</span></div>';
+  trackedSyms().forEach(function(id){var sy=symById(id);if(sy)h+=symSeg(sy,cl.sym[id]);});
+  h+='<div style="margin-top:4px"><button class="ghost" onclick="openTrackedSyms()">＋ customize symptoms</button></div>';
+  h+='<div class="ksec">Exertion · 0–3</div>'+exSeg('p','Physical',cl.exertion.p)+exSeg('m','Mental',cl.exertion.m)+exSeg('e','Emotional',cl.exertion.e)+exSeg('s','Social',cl.exertion.s);
+  h+='<div class="ksec">Today I…</div><div class="mealpick" style="flex-wrap:wrap">'+trackedEvents().map(function(eid){var ev=eventById(eid);return ev?'<button class="'+(cl.events.indexOf(eid)>=0?'on':'')+'" onclick="toggleEvent(\''+eid+'\')">'+ev.emoji+' '+ev.label+'</button>':'';}).join('')+'</div><div style="margin-top:4px"><button class="ghost" onclick="openTrackedEvents()">＋ customize activities</button></div>';
+  if(hasCycle()){
+    h+='<div class="ksec">Mood</div><div class="mealpick" style="flex-wrap:wrap">'+MOOD_TAGS.map(function(m){return '<button class="'+(cl.mood.indexOf(m)>=0?'on':'')+'" onclick="toggleMood(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
+    h+='<div class="ksec">Sex & drive</div><div class="mealpick" style="flex-wrap:wrap">'+SEX_TAGS.map(function(m){return '<button class="'+(cl.sex.indexOf(m)>=0?'on':'')+'" onclick="toggleSex(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
+    h+='<div class="ksec">Discharge</div><div class="mealpick" style="flex-wrap:wrap">'+DISCHARGE_OPTS.map(function(o){return '<button class="'+(cl.discharge===o?'on':'')+'" onclick="setDischarge(\''+o+'\')">'+o+'</button>';}).join('')+'</div>';
+  }
+  h+='<div style="margin-top:14px"><label class="fl">Note</label><textarea id="cl_note" rows="2" oninput="setLogNote(this.value)" placeholder="anything else — deviations, context, how you feel">'+esc(cl.note)+'</textarea></div>';
   h+='<button class="act" style="width:100%;margin-top:14px" onclick="closeCycleLog()">Done</button>';
   b.innerHTML=h;
 }
 function setFlow(i){var cl=cycleLogFor(_logDate);cl.flow=i;persist();recomputeCycle();renderCycleLog();}
 function setSym(id,v){var cl=cycleLogFor(_logDate);if(v===0){delete cl.sym[id];}else cl.sym[id]=v;persist();renderCycleLog();}
-function setSymBool(id){var cl=cycleLogFor(_logDate);if(cl.sym[id])delete cl.sym[id];else cl.sym[id]=true;persist();renderCycleLog();}
-function setSymStr(id,o){var cl=cycleLogFor(_logDate);if(cl.sym[id]===o)delete cl.sym[id];else cl.sym[id]=o;persist();renderCycleLog();}
+function setSleepH(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.h=parseFloat(v)||null;persist();}
+function setSleepQ(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.q=v;persist();renderCycleLog();}
+function setExertion(k,v){var cl=cycleLogFor(_logDate);if(!cl.exertion)cl.exertion={};cl.exertion[k]=v;persist();renderCycleLog();}
+function toggleEvent(id){var cl=cycleLogFor(_logDate);if(!cl.events)cl.events=[];var i=cl.events.indexOf(id);if(i>=0)cl.events.splice(i,1);else cl.events.push(id);persist();renderCycleLog();}
+function toggleMood(m){var cl=cycleLogFor(_logDate);if(!cl.mood)cl.mood=[];var i=cl.mood.indexOf(m);if(i>=0)cl.mood.splice(i,1);else cl.mood.push(m);persist();renderCycleLog();}
+function toggleSex(m){var cl=cycleLogFor(_logDate);if(!cl.sex)cl.sex=[];var i=cl.sex.indexOf(m);if(i>=0)cl.sex.splice(i,1);else cl.sex.push(m);persist();renderCycleLog();}
+function setDischarge(o){var cl=cycleLogFor(_logDate);cl.discharge=(cl.discharge===o?'':o);persist();renderCycleLog();}
+function everythingFine(){cycleLogFor(_logDate).sym={};persist();renderCycleLog();}
+function openTrackedSyms(){var tr=trackedSyms();document.getElementById('trackSymBody').innerHTML='<div class="sub">Tap the symptoms you want in your check-in. Only these show — curate it to your body.</div><div class="mealpick" style="flex-wrap:wrap">'+MASTER_SYM.map(function(sy){return '<button class="'+(tr.indexOf(sy.id)>=0?'on':'')+'" onclick="toggleTrackSym(\''+sy.id+'\')">'+sy.label+'</button>';}).join('')+'</div><button class="act" style="width:100%;margin-top:14px" onclick="closeTrackSyms()">Done</button>';showEl('trackSymSheet');}
+function toggleTrackSym(id){if(!S.trackedSyms||!S.trackedSyms.length)S.trackedSyms=DEFAULT_TRACKED.slice();var i=S.trackedSyms.indexOf(id);if(i>=0)S.trackedSyms.splice(i,1);else S.trackedSyms.push(id);persist();openTrackedSyms();}
+function closeTrackSyms(){hideEl('trackSymSheet');renderCycleLog();}
+function openTrackedEvents(){var tr=trackedEvents();document.getElementById('trackEvBody').innerHTML='<div class="sub">Tap the activities + events you want as quick tags.</div><div class="mealpick" style="flex-wrap:wrap">'+MASTER_EVENTS.map(function(ev){return '<button class="'+(tr.indexOf(ev.id)>=0?'on':'')+'" onclick="toggleTrackEv(\''+ev.id+'\')">'+ev.emoji+' '+ev.label+'</button>';}).join('')+'</div><button class="act" style="width:100%;margin-top:14px" onclick="closeTrackEv()">Done</button>';showEl('trackEvSheet');}
+function toggleTrackEv(id){if(!S.trackedEvents||!S.trackedEvents.length)S.trackedEvents=DEFAULT_EVENTS.slice();var i=S.trackedEvents.indexOf(id);if(i>=0)S.trackedEvents.splice(i,1);else S.trackedEvents.push(id);persist();openTrackedEvents();}
+function closeTrackEv(){hideEl('trackEvSheet');renderCycleLog();}
 function setLogNote(v){cycleLogFor(_logDate).note=v;persist();}
 
 /* ---- calendar ---- */
@@ -1510,15 +1544,31 @@ function moonPhase(dk){var d=new Date(dk+'T12:00:00').getTime();var ref=new Date
 
 var FLOW=['none','spotting','light','medium','heavy'];
 var FLOW_COLOR=['transparent','#7A3B4A','#9B5C6E','#B5485F','#8B2942'];
-var CYCLE_SYM=[
- {key:'period',label:'Period',syms:[{id:'cramps',label:'Cramps',type:'scale'},{id:'backache',label:'Lower back pain',type:'scale'},{id:'clots',label:'Clots',type:'bool'}]},
- {key:'pots',label:'POTS / autonomic',syms:[{id:'dizziness',label:'Dizzy / lightheaded',type:'scale'},{id:'palpitations',label:'Racing heart / palpitations',type:'scale'},{id:'crash',label:'Crash / fatigue',type:'scale'},{id:'brainfog',label:'Brain fog',type:'scale'},{id:'saltcrave',label:'Salt cravings',type:'bool'},{id:'tempswing',label:'Temperature swings',type:'bool'}]},
- {key:'auto',label:'Autoimmune / flare',syms:[{id:'flare',label:'Overall flare',type:'scale'},{id:'jointpain',label:'Joint pain',type:'scale'},{id:'cheekflare',label:'Cheek flare',type:'bool'},{id:'skin',label:'Skin flare',type:'scale'},{id:'swelling',label:'Swelling',type:'bool'},{id:'histreact',label:'Histamine reaction',type:'bool'}]},
- {key:'mood',label:'Mood, sleep & body',syms:[{id:'mood',label:'Mood',type:'scale',lo:'low',hi:'bright'},{id:'anxiety',label:'Anxiety',type:'scale'},{id:'irritable',label:'Irritability',type:'scale'},{id:'energy',label:'Energy',type:'scale',lo:'drained',hi:'lit'},{id:'sleep',label:'Sleep quality',type:'scale',lo:'poor',hi:'great'},{id:'headache',label:'Headache',type:'scale'},{id:'bloating',label:'Bloating',type:'scale'},{id:'nausea',label:'Nausea',type:'bool'},{id:'breast',label:'Breast tenderness',type:'bool'},{id:'cravings',label:'Food cravings',type:'bool'}]},
- {key:'sexual',label:'Sexual health',syms:[{id:'libido',label:'Libido',type:'scale',lo:'low',hi:'high'},{id:'sexual',label:'Sexual activity',type:'bool'},{id:'sexpain',label:'Discomfort during sex',type:'bool'},{id:'discharge',label:'Discharge',type:'select',opts:['dry','sticky','creamy','egg-white','unusual']}]},
- {key:'meno',label:'Menopause',syms:[{id:'hotflash',label:'Hot flashes',type:'scale'},{id:'nightsweat',label:'Night sweats',type:'bool'},{id:'vagdry',label:'Vaginal dryness',type:'bool'},{id:'menomood',label:'Mood swings',type:'scale'},{id:'menojoint',label:'Joint aches',type:'scale'}]}
+var MASTER_SYM=[
+ {id:'crash',label:'Crash / PEM',cat:'autonomic'},{id:'fatigue',label:'Fatigue',cat:'autonomic'},{id:'palpitations',label:'Palpitations',cat:'autonomic'},{id:'tremors',label:'Tremors',cat:'autonomic'},{id:'lightheaded',label:'Lightheaded / dizzy',cat:'autonomic'},
+ {id:'brainfog',label:'Brain fog',cat:'neuro'},{id:'derealization',label:'Derealization',cat:'neuro'},{id:'tinnitus',label:'Tinnitus',cat:'neuro'},{id:'blurredvision',label:'Blurred vision',cat:'neuro'},
+ {id:'headache',label:'Headache',cat:'pain'},{id:'migraine',label:'Migraine',cat:'pain'},{id:'jointpain',label:'Joint pain',cat:'pain'},{id:'muscleaches',label:'Muscle aches',cat:'pain'},{id:'backache',label:'Backache',cat:'pain'},
+ {id:'stomachpain',label:'Stomach pain',cat:'gi'},{id:'nausea',label:'Nausea',cat:'gi'},{id:'diarrhea',label:'Diarrhea',cat:'gi'},{id:'constipation',label:'Constipation',cat:'gi'},{id:'lackappetite',label:'Lack of appetite',cat:'gi'},{id:'bloating',label:'Bloating',cat:'gi'},
+ {id:'anxiety',label:'Anxiety',cat:'mind'},{id:'depression',label:'Depression',cat:'mind'},{id:'insomnia',label:'Insomnia',cat:'mind'},
+ {id:'cramps',label:'Cramps',cat:'cycle'},{id:'tenderbreasts',label:'Tender breasts',cat:'cycle'},{id:'acne',label:'Acne',cat:'cycle'},{id:'cheekflare',label:'Cheek flare',cat:'cycle'},{id:'vaginalitching',label:'Vaginal itching',cat:'cycle'},
+ {id:'hotflashes',label:'Hot flashes',cat:'meno'},{id:'nightsweats',label:'Night sweats',cat:'meno'},{id:'vaginaldryness',label:'Vaginal dryness',cat:'meno'},
+ {id:'dryskin',label:'Dry skin',cat:'skin'},{id:'dryeyes',label:'Dry eyes',cat:'skin'}
 ];
-function symById(id){for(var i=0;i<CYCLE_SYM.length;i++){var g=CYCLE_SYM[i];for(var j=0;j<g.syms.length;j++)if(g.syms[j].id===id)return g.syms[j];}return null;}
+var DEFAULT_TRACKED=['crash','fatigue','palpitations','tremors','headache','brainfog','anxiety','depression','derealization','jointpain','stomachpain','migraine','muscleaches','tinnitus','blurredvision','diarrhea','lackappetite','nausea','constipation','lightheaded'];
+var MASTER_EVENTS=[
+ {id:'walk',label:'Walk',emoji:'🚶'},{id:'yoga',label:'Yoga',emoji:'🧘'},{id:'strength',label:'Strength',emoji:'🏋️'},{id:'hike',label:'Hike',emoji:'🥾'},{id:'run',label:'Run',emoji:'🏃'},{id:'cycling',label:'Cycling',emoji:'🚴'},{id:'dance',label:'Dance',emoji:'💃'},{id:'swim',label:'Swim',emoji:'🏊'},{id:'snowboard',label:'Snowboard',emoji:'🏂'},
+ {id:'infusion',label:'Infusion',emoji:'💧'},{id:'massage',label:'Massage',emoji:'💆'},{id:'antibiotics',label:'Antibiotics',emoji:'💊'},{id:'albuterol',label:'Albuterol',emoji:'🫁'},{id:'infection',label:'Infection',emoji:'🦠'},{id:'bigstress',label:'Big stress',emoji:'😣'},{id:'travel',label:'Travel',emoji:'✈️'}
+];
+var DEFAULT_EVENTS=['walk','yoga','strength','infusion','massage','antibiotics','albuterol','infection'];
+var MOOD_TAGS=['calm','happy','energetic','frisky','mood swings','irritated','sad','anxious','depressed','guilty','low energy','apathetic','confused','self-critical'];
+var SEX_TAGS=['no sex','protected','unprotected','oral','anal','masturbation','sensual touch','toys','orgasm','no orgasm','high drive','low drive'];
+var DISCHARGE_OPTS=['none','creamy','watery','sticky','egg-white','spotting','unusual','clumpy'];
+function symById(id){for(var i=0;i<MASTER_SYM.length;i++)if(MASTER_SYM[i].id===id)return MASTER_SYM[i];return null;}
+function eventById(id){for(var i=0;i<MASTER_EVENTS.length;i++)if(MASTER_EVENTS[i].id===id)return MASTER_EVENTS[i];return null;}
+function trackedSyms(){return S.trackedSyms&&S.trackedSyms.length?S.trackedSyms:DEFAULT_TRACKED;}
+function trackedEvents(){return S.trackedEvents&&S.trackedEvents.length?S.trackedEvents:DEFAULT_EVENTS;}
+function stabilityScore(dk){var cl=S.cycleLog[dk];if(!cl)return null;var sym=cl.sym||{},burden=0,has=false;Object.keys(sym).forEach(function(k){var v=sym[k];if(typeof v==='number'){burden+=v;has=true;}});var ex=cl.exertion||{},exsum=(ex.p||0)+(ex.m||0)+(ex.e||0)+(ex.s||0);var slq=(cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;if(!has&&!exsum&&slq==null)return null;var score=100-burden*4-exsum*2+(slq!=null?(slq-1.5)*4:0);return Math.max(0,Math.min(100,Math.round(score)));}
+function stabilityLabel(sc){if(sc==null)return ['—','var(--muted)'];if(sc>=75)return ['Good','#4FB68C'];if(sc>=50)return ['Moderate','#E8B96A'];if(sc>=30)return ['Low','#E0743C'];return ['Crash risk','#9B5C6E'];}
 var SCIENCE={
  menstrual:'Estrogen + progesterone are at their floor; prostaglandins (the cramping chemicals) peak, constricting vessels and triggering contractions. You lose ~15–30mg of iron with the bleed, pain perception runs high, and your data shows this is your worst crash + fog window. Your body is in active repair — rest is the strategy, not lost time.',
  follicular:'Estrogen rises fast, building energy and new brain connections. Insulin sensitivity is high (you use carbs efficiently) and estrogen strengthens your skin barrier + collagen. This is your steadiest, strongest window — best HRV + stability. Front-load the hard things here.',
@@ -1560,7 +1610,7 @@ function addCount(){
 function syncPayload(){
   return {_ember:true,version:1,exportedAt:new Date().toISOString(),
     lastPeriodStart:S.lastPeriodStart,cycleLength:S.cycleLength,cycleUpdatedAt:S.cycleUpdatedAt,
-    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,cycleLog:S.cycleLog,drinksLog:S.drinksLog,drinkTypes:S.drinkTypes,alchemyLog:S.alchemyLog,substances:S.substances,protocol:S.protocol,symptoms:S.symptoms,supps:S.supps,
+    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,cycleLog:S.cycleLog,trackedSyms:S.trackedSyms,trackedEvents:S.trackedEvents,drinksLog:S.drinksLog,drinkTypes:S.drinkTypes,alchemyLog:S.alchemyLog,substances:S.substances,protocol:S.protocol,symptoms:S.symptoms,supps:S.supps,
     counts:S.counts,rites:S.rites,favorites:S.favorites};
 }
 function syncBlob(){return new Blob([JSON.stringify(syncPayload(),null,0)],{type:'application/json'});}
