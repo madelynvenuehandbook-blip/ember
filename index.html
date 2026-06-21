@@ -435,6 +435,18 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       <div id="suppList"></div>
     </div>
 
+    <div class="card" id="alchemyCard">
+      <h3>🜍 Alchemy <span class="muted tiny">· what you take, and when</span></h3>
+      <div class="sub" id="alchProtoLine"></div>
+      <div id="alchToggles"></div>
+      <div style="margin-top:10px"><input id="alchNote" placeholder="optional · set, intention, dose…" oninput="setAlchNote(this.value)"></div>
+      <div class="toolrow" style="margin-top:10px">
+        <button class="ghost" onclick="openProtocol()">⚗ Protocol</button>
+        <button class="ghost" onclick="openAlchHistory()">📊 History</button>
+        <button class="ghost" onclick="openAlchManage()">＋ Substances</button>
+      </div>
+    </div>
+
     <div class="card">
       <h3>This Counts</h3>
       <div class="sub" id="dailyQ"></div>
@@ -521,6 +533,26 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
   <div class="sheet-b" id="cycSettingsBody"></div>
 </div>
 
+<div class="sheet" id="alchProtoSheet">
+  <div class="sheet-h"><div class="st">Protocol</div><div class="sx" onclick="closeProtocol()">×</div></div>
+  <div class="sheet-b" id="alchProtoBody"></div>
+</div>
+
+<div class="sheet" id="alchManageSheet">
+  <div class="sheet-h"><div class="st">Substances</div><div class="sx" onclick="closeAlchManage()">×</div></div>
+  <div class="sheet-b" id="alchManageBody"></div>
+</div>
+
+<div class="sheet" id="alchHistSheet">
+  <div class="sheet-h"><div class="st">Alchemy history</div><div class="sx" onclick="closeAlchHistory()">×</div></div>
+  <div class="sheet-b">
+    <div class="monthnav"><button onclick="alchShift(-1)">‹</button><div class="mt" id="alchHistTitle"></div><button onclick="alchShift(1)">›</button></div>
+    <div class="mwk"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+    <div class="monthgrid" id="alchHistGrid"></div>
+    <div id="alchPatterns" style="margin-top:14px"></div>
+  </div>
+</div>
+
 <div class="sheet" id="monthSheet">
   <div class="sheet-h"><div class="st">Month</div><div class="sx" onclick="closeMonth()">×</div></div>
   <div class="sheet-b">
@@ -570,12 +602,12 @@ var FAV_SEED=[
 ];
 var defaults={
   lastPeriodStart:'2026-05-23', cycleLength:29, cycleUpdatedAt:0,
-  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, cycleMode:'C', symptoms:{}, supps:{}, counts:[], rites:{},
+  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, cycleMode:'C', alchemyLog:{}, substances:[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}], protocol:{active:false,start:null,pattern:[]}, symptoms:{}, supps:{}, counts:[], rites:{},
   favorites:FAV_SEED.slice(), lastSync:0
 };
 var S=Object.assign({},defaults,JSON.parse(localStorage.getItem(EKEY)||'{}'));
 if(!S.favorites||!S.favorites.length)S.favorites=FAV_SEED.slice();
-if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.cycleLog)S.cycleLog={};
+if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.cycleLog)S.cycleLog={}; if(!S.alchemyLog)S.alchemyLog={}; if(!S.substances||!S.substances.length)S.substances=[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}]; if(!S.protocol)S.protocol={active:false,start:null,pattern:[]};
 function persist(){try{localStorage.setItem(EKEY,JSON.stringify(S));}catch(e){}}
 
 /* ============ cycle ============ */
@@ -1506,7 +1538,7 @@ function addCount(){
 function syncPayload(){
   return {_ember:true,version:1,exportedAt:new Date().toISOString(),
     lastPeriodStart:S.lastPeriodStart,cycleLength:S.cycleLength,cycleUpdatedAt:S.cycleUpdatedAt,
-    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,cycleLog:S.cycleLog,symptoms:S.symptoms,supps:S.supps,
+    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,cycleLog:S.cycleLog,alchemyLog:S.alchemyLog,substances:S.substances,protocol:S.protocol,symptoms:S.symptoms,supps:S.supps,
     counts:S.counts,rites:S.rites,favorites:S.favorites};
 }
 function syncBlob(){return new Blob([JSON.stringify(syncPayload(),null,0)],{type:'application/json'});}
@@ -1530,7 +1562,79 @@ function flash(msg){var f=document.getElementById('flash');f.textContent=msg;f.s
 var _undo=null;
 function showUndo(msg,fn){_undo=fn;var f=document.getElementById('flash');f.innerHTML=msg+' <span style="color:var(--moon);text-decoration:underline;margin-left:10px;padding:4px" onclick="doUndo()">Undo</span>';f.style.pointerEvents='auto';f.classList.add('show');clearTimeout(window._ft);window._ft=setTimeout(function(){f.classList.remove('show');f.style.pointerEvents='none';},6000);}
 function doUndo(){if(_undo){_undo();_undo=null;flash('Undone.');}}
-function renderAll(){renderHeader();renderToday();renderWater();renderMeals();renderKitchen();renderCycle();renderTend();}
+/* ===== ALCHEMY (substance tracker) ===== */
+function alchDay(dk){if(!S.alchemyLog[dk])S.alchemyLog[dk]={items:{},note:''};if(!S.alchemyLog[dk].items)S.alchemyLog[dk].items={};return S.alchemyLog[dk];}
+function subById(id){return (S.substances||[]).filter(function(x){return x.id===id;})[0];}
+function protocolToday(){var pr=S.protocol;if(!pr||!pr.active||!pr.start||!pr.pattern||!pr.pattern.length)return null;var d=daysBetween(pr.start,todayKey());if(d<0)return null;return pr.pattern[d%pr.pattern.length]||[];}
+function toggleAlch(id){var a=alchDay(todayKey());if(a.items[id])delete a.items[id];else a.items[id]={t:nowTime()};persist();renderAlchemy();}
+function setAlchNote(v){alchDay(todayKey()).note=v;persist();}
+function renderAlchemy(){
+  var host=document.getElementById('alchToggles');if(!host)return;
+  var a=alchDay(todayKey()),sched=protocolToday(),pl=document.getElementById('alchProtoLine');
+  if(sched===null){pl.innerHTML='No protocol running. Tap ⚗ Protocol to set a cycle.';}
+  else if(!sched.length){pl.innerHTML='<b style="color:var(--moonlight)">Today: off day</b> — rest from substances';}
+  else{pl.innerHTML='<b style="color:var(--candle)">Today’s protocol:</b> '+sched.map(function(id){var x=subById(id);return x?x.emoji+' '+x.name:id;}).join(' · ');}
+  host.innerHTML=(S.substances||[]).map(function(x){var done=!!a.items[x.id],isS=sched&&sched.indexOf(x.id)>=0;
+    return '<span class="chip" style="'+(done?'border-color:var(--candle);background:rgba(232,185,106,.15)':'')+'" onclick="toggleAlch(\''+x.id+'\')">'+x.emoji+' '+x.name+(done?' ✓':(isS?' <span style="color:var(--candle)">·due</span>':''))+'</span>';
+  }).join('')||'<div class="note">No substances yet. Tap ＋ Substances.</div>';
+  var n=document.getElementById('alchNote');if(n&&document.activeElement!==n)n.value=a.note||'';
+}
+/* protocol */
+function openProtocol(){renderProtocol();showEl('alchProtoSheet');}
+function closeProtocol(){hideEl('alchProtoSheet');renderAlchemy();}
+function renderProtocol(){var pr=S.protocol;if(!pr.pattern)pr.pattern=[];var b=document.getElementById('alchProtoBody');
+  var h='<div class="sub">Build a repeating cycle. Tap the substances for each day; leave a day empty for an off day. It auto-tells you what today is.</div>';
+  h+='<div class="toggle'+(pr.active?' on':'')+'" onclick="toggleProtoActive()"><div class="sw"></div><div>Protocol active</div></div>';
+  h+='<div class="svrow" style="margin-top:8px"><div><label class="fl">Start date</label><input type="date" value="'+(pr.start||todayKey())+'" onchange="setProtoStart(this.value)"></div><div><label class="fl">Cycle length (days)</label><input type="number" inputmode="numeric" min="1" max="30" value="'+(pr.pattern.length||0)+'" oninput="setProtoLen(this.value)"></div></div>';
+  h+=pr.pattern.map(function(day,i){return '<div style="margin-top:12px"><label class="fl">Day '+(i+1)+(day.length?'':' · off')+'</label><div class="mealpick" style="flex-wrap:wrap">'+(S.substances||[]).map(function(x){return '<button class="'+(day.indexOf(x.id)>=0?'on':'')+'" onclick="toggleProtoDay('+i+',\''+x.id+'\')">'+x.emoji+' '+x.name+'</button>';}).join('')+'</div></div>';}).join('');
+  h+='<button class="act" style="width:100%;margin-top:16px" onclick="closeProtocol()">Done</button>';
+  b.innerHTML=h;
+}
+function setProtoStart(v){S.protocol.start=v;persist();}
+function setProtoLen(v){var n=Math.max(0,Math.min(30,parseInt(v,10)||0)),p=S.protocol.pattern;while(p.length<n)p.push([]);while(p.length>n)p.pop();if(n&&!S.protocol.start)S.protocol.start=todayKey();persist();renderProtocol();}
+function toggleProtoDay(i,id){var d=S.protocol.pattern[i],x=d.indexOf(id);if(x>=0)d.splice(x,1);else d.push(id);persist();renderProtocol();}
+function toggleProtoActive(){S.protocol.active=!S.protocol.active;if(S.protocol.active&&!S.protocol.start)S.protocol.start=todayKey();persist();renderProtocol();}
+/* manage substances */
+function openAlchManage(){renderAlchManage();showEl('alchManageSheet');}
+function closeAlchManage(){hideEl('alchManageSheet');renderAlchemy();}
+function renderAlchManage(){var b=document.getElementById('alchManageBody');
+  var h='<div class="sub">Your substances — add anything you want to track.</div>';
+  h+=(S.substances||[]).map(function(x){return '<div class="entry"><div class="ei"><div class="en">'+x.emoji+' '+x.name+'</div></div><div class="x" onclick="removeSub(\''+x.id+'\')">×</div></div>';}).join('');
+  h+='<div class="svrow" style="margin-top:14px"><div style="flex:0 0 76px"><label class="fl">Emoji</label><input id="newSubEmoji" placeholder="🍄"></div><div style="flex:1"><label class="fl">Name</label><input id="newSubName" placeholder="LSD, ketamine…"></div></div>';
+  h+='<button class="act" style="width:100%;margin-top:10px" onclick="addSub()">Add substance</button>';
+  b.innerHTML=h;
+}
+function addSub(){var nm=document.getElementById('newSubName').value.trim();if(!nm){flash('Name it.');return;}var em=document.getElementById('newSubEmoji').value.trim()||'•';S.substances.push({id:'s_'+Date.now(),name:nm,emoji:em});persist();renderAlchManage();renderAlchemy();}
+function removeSub(id){S.substances=(S.substances||[]).filter(function(x){return x.id!==id;});persist();renderAlchManage();renderAlchemy();}
+/* history + patterns */
+var _alchAnchor=null;
+function openAlchHistory(){_alchAnchor=todayKey();renderAlchHistory();showEl('alchHistSheet');}
+function closeAlchHistory(){hideEl('alchHistSheet');}
+function alchShift(d){var a=new Date((_alchAnchor||todayKey())+'T00:00:00');a.setDate(1);a.setMonth(a.getMonth()+d);_alchAnchor=dkOf(a.getFullYear(),a.getMonth(),1);renderAlchHistory();}
+function renderAlchHistory(){
+  var a=new Date((_alchAnchor||todayKey())+'T00:00:00'),y=a.getFullYear(),m=a.getMonth();
+  document.getElementById('alchHistTitle').textContent=a.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  var first=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate(),tk=todayKey(),html='';
+  for(var i=0;i<first;i++)html+='<div class="mcell empty"></div>';
+  for(var d=1;d<=dim;d++){var dk=dkOf(y,m,d),al=(S.alchemyLog||{})[dk],ids=al&&al.items?Object.keys(al.items):[];var em=ids.map(function(id){var x=subById(id);return x?x.emoji:'•';}).join('');
+    html+='<div class="mcell'+(dk===tk?' today':'')+'"><div class="dn">'+d+'</div>'+(em?'<div style="font-size:11px;line-height:1;margin-top:1px">'+em+'</div>':'')+'</div>';}
+  document.getElementById('alchHistGrid').innerHTML=html;
+  document.getElementById('alchPatterns').innerHTML=alchPatterns();
+}
+function alchPatterns(){
+  var metrics=[['energy','energy'],['flare','flare'],['mood','mood'],['sleep','sleep']];
+  var out='<div class="ksec">Patterns · days used vs not</div>',any=false;
+  (S.substances||[]).forEach(function(x){
+    var used={};Object.keys(S.alchemyLog||{}).forEach(function(dk){if((S.alchemyLog[dk].items||{})[x.id])used[dk]=1;});
+    var nUsed=Object.keys(used).length;if(nUsed<2)return;any=true;
+    function avg(mt,onUsed){var v=[];Object.keys(S.cycleLog||{}).forEach(function(dk){var val=(S.cycleLog[dk].sym||{})[mt];if(typeof val!=='number')return;if(!!used[dk]===onUsed)v.push(val);});return v.length?v.reduce(function(a,b){return a+b;},0)/v.length:null;}
+    var lines=metrics.map(function(mm){var on=avg(mm[0],true),off=avg(mm[0],false);if(on==null)return '';return mm[1]+' '+on.toFixed(1)+' vs '+(off!=null?off.toFixed(1):'—');}).filter(Boolean).join(' · ');
+    out+='<div class="rcard"><div class="rn" style="font-size:16px">'+x.emoji+' '+x.name+'</div><div class="rmac">'+nUsed+' days'+(lines?' · '+lines+' (on/off)':'')+'</div></div>';
+  });
+  if(!any)out+='<div class="note">Log substances here + your symptoms on the Cycle/Body tab. After a couple weeks, this shows how your energy, flare, mood + sleep compare on days you used vs days you didn’t — your own biological signal.</div>';
+  return out;
+}
+function renderAll(){renderHeader();renderToday();renderWater();renderMeals();renderKitchen();renderCycle();renderTend();renderAlchemy();}
 document.querySelectorAll('nav.tabs button').forEach(function(b){
   b.onclick=function(){
     document.querySelectorAll('nav.tabs button').forEach(function(x){x.classList.remove('on');});
