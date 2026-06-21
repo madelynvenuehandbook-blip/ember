@@ -192,6 +192,12 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 .collapse-h{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
 .collapse-h .cv{font-size:13px;color:var(--candle)}
 
+.datestrip{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.datestrip .dnav{flex:0 0 auto;width:46px;height:46px;border-radius:12px;border:1px solid var(--line);background:rgba(236,233,244,.04);color:var(--candle);font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.datestrip .dnav:active{transform:scale(.93);background:rgba(232,185,106,.1)}
+.datestrip .dlabel{flex:1;text-align:center;cursor:pointer;padding:4px 0}
+.datestrip .dl1{font-family:var(--temple);font-size:20px;color:var(--moon);letter-spacing:.04em}
+.datestrip .dl2{font-size:13px;color:var(--candle);margin-top:3px}
 /* ===== FOOD SEARCH SHEET ===== */
 .sheet{position:fixed;inset:0;z-index:120;background:linear-gradient(180deg,var(--void),var(--night) 60%,var(--dusk));
   display:none;flex-direction:column;padding-top:env(safe-area-inset-top)}
@@ -323,6 +329,14 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
     <div class="eyebrow">Build the body</div>
     <div class="pagetitle">Meals</div>
 
+    <div class="datestrip">
+      <button class="dnav" onclick="mealsPrev()">‹</button>
+      <div class="dlabel" onclick="openDatePicker()"><div class="dl1" id="dLabel">Today</div><div class="dl2" id="dSub"></div></div>
+      <button class="dnav" onclick="mealsNext()">›</button>
+      <input type="date" id="mealDate" onchange="mealsPick(this.value)" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+    </div>
+    <div id="dToday" style="text-align:center;margin:-4px 0 12px"></div>
+
     <div class="card">
       <div class="daysum">
         <div id="calRing"></div>
@@ -337,7 +351,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
     </div>
 
     <div class="toolrow">
-      <button class="ghost" onclick="copyYesterday()">⧉ Copy yesterday</button>
+      <button class="ghost" onclick="copyPrevDay()">⧉ Copy previous day</button>
       <button class="ghost" onclick="openCreate('food')">＋ Custom food</button>
       <button class="ghost" onclick="openCreate('recipe')">＋ Recipe</button>
     </div>
@@ -517,7 +531,8 @@ var MACRO_PHASE={
  ovulation:{kcal:2180,p:140,c:250,f:68,note:'Lighter + anti-inflammatory, histamine-aware. Protein stays high; hydrate hard.'},
  luteal:{kcal:2380,p:145,c:285,f:70,note:'+130 cal, complex carbs, more magnesium. Your body genuinely needs more here — give it.'}
 };
-function targets(){var ph=cycleInfo().phase.key;return MACRO_PHASE[ph]||MACRO_BASE;}
+function targetsFor(ph){return MACRO_PHASE[ph]||MACRO_BASE;}
+function targets(){return targetsFor(cycleInfo().phase.key);}
 
 /* ============ water goal ============ */
 function waterGoal(){
@@ -842,7 +857,19 @@ function addLyte(n){var k=todayKey();var w=S.hydration[k]||{ml:0,lyte:0};w.lyte=
 
 /* ===== MEALS ENGINE ===== */
 var _meal='breakfast', _tab='all', _servCtx=null, _offResults=[], _searchT=null, _recipeDraft=null;
-function nutrientTargets(){var ph=cycleInfo().phase.key;var sod=5000,iron=18;if(ph==='ovulation'||ph==='menstrual')sod=7000;if(ph==='menstrual')iron=27;return {fib:28,sug:50,sod:sod,pot:3500,iron:iron,mag:350};}
+var _viewDate=null;
+function viewKey(){return _viewDate||todayKey();}
+function shiftDateKey(dk,delta){var d=new Date(dk+'T00:00:00');d.setDate(d.getDate()+delta);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function dateLabel(dk){var t=todayKey();if(dk===t)return 'Today';if(dk===shiftDateKey(t,-1))return 'Yesterday';if(dk===shiftDateKey(t,1))return 'Tomorrow';return new Date(dk+'T00:00:00').toLocaleDateString(undefined,{weekday:'long'});}
+function dateSub(dk){return new Date(dk+'T00:00:00').toLocaleDateString(undefined,{month:'long',day:'numeric'});}
+function viewPhaseInfo(dk){var day=dayNumFor(dk);return {day:day,phase:phaseForDay(day)};}
+function mealsPrev(){_viewDate=shiftDateKey(viewKey(),-1);renderMeals();}
+function mealsNext(){_viewDate=shiftDateKey(viewKey(),1);renderMeals();}
+function mealsToday(){_viewDate=todayKey();renderMeals();}
+function mealsPick(v){if(v)_viewDate=v;renderMeals();}
+function openDatePicker(){var i=document.getElementById('mealDate');if(!i)return;if(i.showPicker){try{i.showPicker();return;}catch(e){}}i.click();}
+function nutrientTargetsFor(ph){var sod=5000,iron=18;if(ph==='ovulation'||ph==='menstrual')sod=7000;if(ph==='menstrual')iron=27;return {fib:28,sug:50,sod:sod,pot:3500,iron:iron,mag:350};}
+function nutrientTargets(){return nutrientTargetsFor(cycleInfo().phase.key);}
 
 function migrateMeals(){if(!S.meals)return;Object.keys(S.meals).forEach(function(dk){if(S.diary[dk])return;var arr=S.meals[dk]||[];if(!arr.length)return;var d={breakfast:[],lunch:[],dinner:[],snacks:[]};arr.forEach(function(m){var k=kcalOf(m.p||0,m.c||0,m.f||0);d.snacks.push({id:m.id||Date.now()+Math.floor(Math.random()*9999),name:m.t||'logged',qty:1,serv:'serving',grams:0,fid:null,kcal:m.kcal||k,p:m.p||0,c:m.c||0,f:m.f||0,fib:0,sug:0,sod:0,pot:0,iron:0,mag:0,phase:m.phase||phaseKeyForDate(dk),time:m.time||'',meal:'snacks'});});S.diary[dk]=d;});}
 function seedRecipes(){if(S.recipes&&S.recipes.length)return;S.recipes=(FAV_SEED||[]).map(function(f,i){return {id:'r'+(i+1),name:f.name,servings:1,ing:[],per:{kcal:kcalOf(f.p,f.c,f.f),p:f.p,c:f.c,f:f.f,fib:0,sug:0,sod:0,pot:0,iron:0,mag:0}};});}
@@ -850,15 +877,22 @@ function seedRecipes(){if(S.recipes&&S.recipes.length)return;S.recipes=(FAV_SEED
 function microBar(lab,val,goal,unit,color,limit){var pct=goal?Math.min(1,val/goal):0;var over=val>goal;var c=limit?(over?'var(--rose)':color):color;return '<div class="micro"><div class="mt"><span>'+lab+'</span><b>'+Math.round(val)+(unit||'')+' / '+goal+(unit||'')+'</b></div><div class="tk"><div class="fl" style="width:'+(pct*100)+'%;background:'+c+'"></div></div></div>';}
 
 function renderMeals(){
-  var tg=targets(),tot=macroTotals(),nt=nutrientTargets();
+  var dk=viewKey(), vp=viewPhaseInfo(dk);
+  var tg=targetsFor(vp.phase.key), nt=nutrientTargetsFor(vp.phase.key), tot=sumEntries(flatDay(dk));
   var calLeft=Math.round(tg.kcal-tot.kcal);
+  var dl=document.getElementById('dLabel'); if(dl)dl.textContent=dateLabel(dk);
+  var ds=document.getElementById('dSub'); if(ds){ds.textContent=dateSub(dk)+' · Day '+vp.day+' · '+vp.phase.name;ds.style.color=vp.phase.color;}
+  var mdi=document.getElementById('mealDate'); if(mdi)mdi.value=dk;
+  var dt=document.getElementById('dToday'); if(dt)dt.innerHTML=(dk!==todayKey())?'<button class="ghost" onclick="mealsToday()">↩ jump back to today</button>':'';
   document.getElementById('calRing').innerHTML=ring(tot.kcal/tg.kcal,(calLeft>=0?calLeft:'+'+(-calLeft)),(calLeft>=0?'cal left':'cal over'),Math.round(tg.kcal)+' goal','#E0743C',128);
   document.getElementById('protRing2').innerHTML=ring(tot.p/tg.p,Math.round(tot.p),'protein',tg.p+'g goal','#4FB68C',128);
   document.getElementById('calEqn').innerHTML='Goal <b>'+Math.round(tg.kcal)+'</b> − Food <b>'+Math.round(tot.kcal)+'</b> = <b>'+calLeft+'</b> left';
   document.getElementById('macroRings').innerHTML=mbar('Protein · your priority',tot.p,tg.p,'var(--green)')+mbar('Carbs',tot.c,tg.c,'#C9A24B')+mbar('Fat',tot.f,tg.f,'#B98A6A');
-  document.getElementById('microBody').innerHTML='<div class="microgrid">'+microBar('Fiber',tot.fib,nt.fib,'g','#6FA88C')+microBar('Sugar',tot.sug,nt.sug,'g','#C9A24B',true)+microBar('Sodium',tot.sod,nt.sod,'mg','#5FA8D3')+microBar('Potassium',tot.pot,nt.pot,'mg','#9B8AC4')+microBar('Iron',tot.iron,nt.iron,'mg','#B86A6A')+microBar('Magnesium',tot.mag,nt.mag,'mg','#6FA88C')+'</div><div class="note">Sodium target rises in ovulation + menstrual for your POTS. Iron rises in menstrual. Sugar is a ceiling, not a goal.</div>';
+  document.getElementById('microBody').innerHTML='<div class="microgrid">'+microBar('Fiber',tot.fib,nt.fib,'g','#6FA88C')+microBar('Sugar',tot.sug,nt.sug,'g','#C9A24B',true)+microBar('Sodium',tot.sod,nt.sod,'mg','#5FA8D3')+microBar('Potassium',tot.pot,nt.pot,'mg','#9B8AC4')+microBar('Iron',tot.iron,nt.iron,'mg','#B86A6A')+microBar('Magnesium',tot.mag,nt.mag,'mg','#6FA88C')+'</div><div class="note">Targets follow this day&#39;s phase ('+vp.phase.name+'). Sodium rises in ovulation + menstrual; iron rises in menstrual; sugar is a ceiling.</div>';
   document.getElementById('phaseEat').textContent=tg.note;
-  var d=diaryFor(todayKey()),html='';
+  var d=diaryFor(dk),html='';
+  var empty=!flatDay(dk).length;
+  if(empty && dk!==todayKey()){html+='<div class="note" style="text-align:center;margin:0 0 10px">'+(dk>todayKey()?'Planning ahead — build out '+dateLabel(dk)+'. Tip: ⧉ Copy previous day to start from a day you liked.':'Nothing was logged this day.')+'</div>';}
   MEALSECS.forEach(function(mk){
     var list=d[mk],sub=sumEntries(list);
     html+='<div class="card mealsec"><div class="mealhead"><div class="mn">'+MEAL_LABEL[mk]+'</div><div class="mk">'+Math.round(sub.kcal)+' cal</div></div>';
@@ -868,8 +902,8 @@ function renderMeals(){
   document.getElementById('diaryBody').innerHTML=html;
 }
 function toggleMicros(){var b=document.getElementById('microBody'),t=document.getElementById('microToggle');if(b.style.display==='none'){b.style.display='block';t.textContent='hide ▴';}else{b.style.display='none';t.textContent='show all ▾';}}
-function delEntry(mk,id){var d=diaryFor(todayKey());d[mk]=d[mk].filter(function(e){return String(e.id)!==String(id);});persist();renderMeals();renderToday();renderPatterns();}
-function copyYesterday(){var y=new Date();y.setDate(y.getDate()-1);var yk=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');var yd=S.diary[yk];if(!yd||!flatDay(yk).length){flash('Nothing logged yesterday.');return;}var d=diaryFor(todayKey());MEALSECS.forEach(function(mk){(yd[mk]||[]).forEach(function(e){var n=JSON.parse(JSON.stringify(e));n.id=Date.now()+Math.floor(Math.random()*9999);n.phase=cycleInfo().phase.key;d[mk].push(n);});});persist();renderMeals();renderToday();renderPatterns();flash('Copied yesterday.');}
+function delEntry(mk,id){var d=diaryFor(viewKey());d[mk]=d[mk].filter(function(e){return String(e.id)!==String(id);});persist();renderMeals();renderToday();renderPatterns();}
+function copyPrevDay(){var dk=viewKey();var prev=shiftDateKey(dk,-1);var yd=S.diary[prev];if(!yd||!flatDay(prev).length){flash('Nothing logged the day before.');return;}var d=diaryFor(dk);var vph=phaseKeyForDate(dk);MEALSECS.forEach(function(mk){(yd[mk]||[]).forEach(function(e){var n=JSON.parse(JSON.stringify(e));n.id=Date.now()+Math.floor(Math.random()*99999);n.phase=vph;d[mk].push(n);});});persist();renderMeals();renderToday();renderPatterns();flash('Copied '+dateLabel(prev)+' here.');}
 
 /* ---- food search sheet ---- */
 function showEl(id){document.getElementById(id).classList.add('open');}
@@ -917,7 +951,7 @@ function lookupBarcode(code){flash('Looking up…');fetch('https://world.openfoo
 /* ---- serving picker ---- */
 function openServFood(id,edit){var f=foodById(id);if(!f)return;_servCtx={kind:'food',ref:f,servIdx:0,grams:f.serv[0][1],qty:1,meal:_meal,edit:edit||null};servRender();showEl('backdrop');showEl('servSheet');}
 function openServRecipe(id,edit){var r=recipeById(id);if(!r)return;_servCtx={kind:'recipe',ref:r,qty:1,meal:_meal,edit:edit||null};servRender();showEl('backdrop');showEl('servSheet');}
-function editEntry(mk,id){var e=flatDay(todayKey()).filter(function(x){return String(x.id)===String(id);})[0];if(!e)return;_meal=mk;if(e.rid&&recipeById(e.rid)){openServRecipe(e.rid,{meal:mk,id:id});if(_servCtx){_servCtx.qty=e.qty||1;servRender();}}else if(e.fid&&foodById(e.fid)){openServFood(e.fid,{meal:mk,id:id});if(_servCtx){var f=_servCtx.ref;var si=f.serv.map(function(x){return x[0];}).indexOf(e.serv);_servCtx.servIdx=si>=0?si:0;_servCtx.grams=si>=0?f.serv[si][1]:(e.grams||100);_servCtx.qty=e.qty||1;servRender();}}else{flash('Logged manually — delete and re-add to change.');}}
+function editEntry(mk,id){var e=flatDay(viewKey()).filter(function(x){return String(x.id)===String(id);})[0];if(!e)return;_meal=mk;if(e.rid&&recipeById(e.rid)){openServRecipe(e.rid,{meal:mk,id:id});if(_servCtx){_servCtx.qty=e.qty||1;servRender();}}else if(e.fid&&foodById(e.fid)){openServFood(e.fid,{meal:mk,id:id});if(_servCtx){var f=_servCtx.ref;var si=f.serv.map(function(x){return x[0];}).indexOf(e.serv);_servCtx.servIdx=si>=0?si:0;_servCtx.grams=si>=0?f.serv[si][1]:(e.grams||100);_servCtx.qty=e.qty||1;servRender();}}else{flash('Logged manually — delete and re-add to change.');}}
 function servRender(){var c=_servCtx;if(!c)return;var h='';
   if(c.kind==='food'){var f=c.ref;var n=nutrFromV(f.v,c.grams*c.qty);
     h+='<div class="svn">'+(f.br?f.br+' ':'')+f.n+'</div><div class="svb">per '+c.grams+' g serving</div>';
@@ -937,10 +971,10 @@ function servGrams(v){_servCtx.grams=num(v);servRender();}
 function servQty(v){_servCtx.qty=num(v)||1;servRender();}
 function servMeal(mk){_servCtx.meal=mk;servRender();}
 function closeServ(){hideEl('servSheet');hideEl('backdrop');_servCtx=null;}
-function servAdd(){var c=_servCtx;if(!c)return;var e,d=diaryFor(todayKey());
-  if(c.kind==='food'){var f=c.ref,n=nutrFromV(f.v,c.grams*c.qty);e={id:Date.now()+Math.floor(Math.random()*999),name:(f.br?f.br+' ':'')+f.n,fid:f.id,qty:c.qty,serv:(c.servIdx>=0?f.serv[c.servIdx][0]:c.grams+' g'),grams:c.grams,kcal:n.kcal,p:n.p,c:n.c,f:n.f,fib:n.fib,sug:n.sug,sod:n.sod,pot:n.pot,iron:n.iron,mag:n.mag,phase:cycleInfo().phase.key,time:nowTime(),meal:c.meal};}
-  else{var r=c.ref,pr=r.per;e={id:Date.now()+Math.floor(Math.random()*999),name:r.name,rid:r.id,qty:c.qty,serv:c.qty+' serving',grams:0,kcal:pr.kcal*c.qty,p:pr.p*c.qty,c:pr.c*c.qty,f:pr.f*c.qty,fib:(pr.fib||0)*c.qty,sug:(pr.sug||0)*c.qty,sod:(pr.sod||0)*c.qty,pot:(pr.pot||0)*c.qty,iron:(pr.iron||0)*c.qty,mag:(pr.mag||0)*c.qty,phase:cycleInfo().phase.key,time:nowTime(),meal:c.meal};}
-  if(c.edit){var od=diaryFor(c.edit.meal||c.meal);od[c.edit.meal]=od[c.edit.meal].filter(function(x){return String(x.id)!==String(c.edit.id);});}
+function servAdd(){var c=_servCtx;if(!c)return;var vph=phaseKeyForDate(viewKey()),vt=(viewKey()===todayKey()?nowTime():'');var e,d=diaryFor(viewKey());
+  if(c.kind==='food'){var f=c.ref,n=nutrFromV(f.v,c.grams*c.qty);e={id:Date.now()+Math.floor(Math.random()*999),name:(f.br?f.br+' ':'')+f.n,fid:f.id,qty:c.qty,serv:(c.servIdx>=0?f.serv[c.servIdx][0]:c.grams+' g'),grams:c.grams,kcal:n.kcal,p:n.p,c:n.c,f:n.f,fib:n.fib,sug:n.sug,sod:n.sod,pot:n.pot,iron:n.iron,mag:n.mag,phase:vph,time:vt,meal:c.meal};}
+  else{var r=c.ref,pr=r.per;e={id:Date.now()+Math.floor(Math.random()*999),name:r.name,rid:r.id,qty:c.qty,serv:c.qty+' serving',grams:0,kcal:pr.kcal*c.qty,p:pr.p*c.qty,c:pr.c*c.qty,f:pr.f*c.qty,fib:(pr.fib||0)*c.qty,sug:(pr.sug||0)*c.qty,sod:(pr.sod||0)*c.qty,pot:(pr.pot||0)*c.qty,iron:(pr.iron||0)*c.qty,mag:(pr.mag||0)*c.qty,phase:vph,time:vt,meal:c.meal};}
+  if(c.edit){var od=diaryFor(viewKey());od[c.edit.meal]=(od[c.edit.meal]||[]).filter(function(x){return String(x.id)!==String(c.edit.id);});}
   d[c.meal].push(e);persist();closeServ();closeFoodSheet();renderMeals();renderToday();renderPatterns();flash('Logged. '+Math.round(e.p)+'g protein in.');}
 function nowTime(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 
