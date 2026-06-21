@@ -198,6 +198,24 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 .datestrip .dlabel{flex:1;text-align:center;cursor:pointer;padding:4px 0}
 .datestrip .dl1{font-family:var(--temple);font-size:20px;color:var(--moon);letter-spacing:.04em}
 .datestrip .dl2{font-size:13px;color:var(--candle);margin-top:3px}
+/* ===== MONTH VIEW ===== */
+.monthnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.monthnav .mt{font-family:var(--temple);font-size:19px;color:var(--moon);letter-spacing:.05em}
+.monthnav button{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:rgba(236,233,244,.04);color:var(--candle);font-size:22px;cursor:pointer}
+.monthnav button:active{transform:scale(.94)}
+.mwk{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:6px}
+.mwk span{text-align:center;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.monthgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.mcell{aspect-ratio:1;border-radius:11px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden}
+.mcell .tint{position:absolute;inset:0;opacity:.34;z-index:1}
+.mcell .dn{font-size:15px;color:var(--cream);position:relative;z-index:2;line-height:1}
+.mcell .dkk{font-size:10px;color:var(--moonlight);position:relative;z-index:2;margin-top:2px;line-height:1}
+.mcell.empty{border:none;cursor:default;background:none}
+.mcell.today{border-color:var(--candle);border-width:2px}
+.mcell.sel{box-shadow:0 0 0 2px var(--moon) inset}
+.mlegend{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:16px;font-size:12.5px;color:var(--muted)}
+.mlegend span{white-space:nowrap}
+.mlegend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px;opacity:.7}
 /* ===== FOOD SEARCH SHEET ===== */
 .sheet{position:fixed;inset:0;z-index:120;background:linear-gradient(180deg,var(--void),var(--night) 60%,var(--dusk));
   display:none;flex-direction:column;padding-top:env(safe-area-inset-top)}
@@ -331,7 +349,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 
     <div class="datestrip">
       <button class="dnav" onclick="mealsPrev()">‹</button>
-      <div class="dlabel" onclick="openDatePicker()"><div class="dl1" id="dLabel">Today</div><div class="dl2" id="dSub"></div></div>
+      <div class="dlabel" onclick="openMonth()"><div class="dl1"><span id="dLabel">Today</span> <span style="color:var(--muted);font-size:14px">▾</span></div><div class="dl2" id="dSub"></div></div>
       <button class="dnav" onclick="mealsNext()">›</button>
       <input type="date" id="mealDate" onchange="mealsPick(this.value)" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
     </div>
@@ -425,6 +443,16 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 </div>
 
 <div class="serv" id="servSheet"><div id="servBody"></div></div>
+
+<div class="sheet" id="monthSheet">
+  <div class="sheet-h"><div class="st">Month</div><div class="sx" onclick="closeMonth()">×</div></div>
+  <div class="sheet-b">
+    <div class="monthnav"><button onclick="monthShift(-1)">‹</button><div class="mt" id="monthTitle"></div><button onclick="monthShift(1)">›</button></div>
+    <div class="mwk"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+    <div class="monthgrid" id="monthGrid"></div>
+    <div class="mlegend" id="monthLegend"></div>
+  </div>
+</div>
 
 <div class="sheet" id="createSheet">
   <div class="sheet-h"><div class="st" id="createTitle">Custom food</div><div class="sx" onclick="closeCreate()">×</div></div>
@@ -868,6 +896,24 @@ function mealsNext(){_viewDate=shiftDateKey(viewKey(),1);renderMeals();}
 function mealsToday(){_viewDate=todayKey();renderMeals();}
 function mealsPick(v){if(v)_viewDate=v;renderMeals();}
 function openDatePicker(){var i=document.getElementById('mealDate');if(!i)return;if(i.showPicker){try{i.showPicker();return;}catch(e){}}i.click();}
+var _monthAnchor=null;
+function dkOf(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+function openMonth(){_monthAnchor=viewKey();renderMonth();showEl('monthSheet');}
+function closeMonth(){hideEl('monthSheet');}
+function monthShift(delta){var a=new Date((_monthAnchor||viewKey())+'T00:00:00');a.setDate(1);a.setMonth(a.getMonth()+delta);_monthAnchor=dkOf(a.getFullYear(),a.getMonth(),1);renderMonth();}
+function renderMonth(){
+  var a=new Date((_monthAnchor||viewKey())+'T00:00:00');var y=a.getFullYear(),m=a.getMonth();
+  document.getElementById('monthTitle').textContent=a.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  var first=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate();
+  var tk=todayKey(),vk=viewKey(),html='';
+  for(var i=0;i<first;i++)html+='<div class="mcell empty"></div>';
+  for(var d=1;d<=dim;d++){var dk=dkOf(y,m,d);var vp=viewPhaseInfo(dk);var tot=sumEntries(flatDay(dk));
+    var cls='mcell'+(dk===tk?' today':'')+(dk===vk?' sel':'');
+    html+='<div class="'+cls+'" onclick="pickMonthDay(\''+dk+'\')"><div class="tint" style="background:'+vp.phase.color+'"></div><div class="dn">'+d+'</div>'+(tot.kcal>0?'<div class="dkk">'+Math.round(tot.kcal)+'</div>':'')+'</div>';}
+  document.getElementById('monthGrid').innerHTML=html;
+  document.getElementById('monthLegend').innerHTML=PHASES.map(function(p){return '<span><i style="background:'+p.color+'"></i>'+p.name+'</span>';}).join('');
+}
+function pickMonthDay(dk){_viewDate=dk;closeMonth();renderMeals();}
 function nutrientTargetsFor(ph){var sod=5000,iron=18;if(ph==='ovulation'||ph==='menstrual')sod=7000;if(ph==='menstrual')iron=27;return {fib:28,sug:50,sod:sod,pot:3500,iron:iron,mag:350};}
 function nutrientTargets(){return nutrientTargetsFor(cycleInfo().phase.key);}
 
