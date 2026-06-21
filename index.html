@@ -446,6 +446,15 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
     <div class="eyebrow">Keep the fire</div>
     <div class="pagetitle">Tend</div>
     <div class="sub">Feeding the mind + the becoming — your routines, your habits, the woman you're growing into. (Your body lives in Cycle.)</div>
+    <div class="card" id="thisCountsCard" style="background:linear-gradient(140deg,rgba(224,116,60,.17),rgba(232,185,106,.06));border-color:rgba(232,185,106,.5);box-shadow:0 6px 30px rgba(224,116,60,.14)">
+      <div class="eyebrow" style="color:var(--flame);opacity:1">🔥 The heart of it</div>
+      <h3 style="font-size:24px;margin-bottom:4px">This Counts</h3>
+      <div class="sub" id="dailyQ" style="color:var(--moonlight)"></div>
+      <textarea id="countText" rows="3" placeholder="Anything that nourished you today. Rest counts. Bank it."></textarea>
+      <div style="margin-top:10px"><button class="act" onclick="addCount()">log it</button></div>
+      <div id="countTally" class="tiny" style="color:var(--candle);margin-top:12px;letter-spacing:.08em"></div>
+      <div id="countList" style="margin-top:8px"></div>
+    </div>
 
     <div class="card">
       <h3>Today's stack</h3>
@@ -463,14 +472,6 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
         <button class="ghost" onclick="openAlchHistory()">📊 History</button>
         <button class="ghost" onclick="openAlchManage()">＋ Substances</button>
       </div>
-    </div>
-
-    <div class="card">
-      <h3>This Counts</h3>
-      <div class="sub" id="dailyQ"></div>
-      <textarea id="countText" rows="3" placeholder="Anything that nourished you today. Rest counts."></textarea>
-      <div style="margin-top:8px"><button class="act" onclick="addCount()">log it</button></div>
-      <div id="countList" style="margin-top:10px"></div>
     </div>
 
     <div class="card">
@@ -1618,7 +1619,7 @@ function renderTend(){
   }).join('');
   document.getElementById('dailyQ').textContent=todaysQ();
   var cs=(S.counts||[]).filter(function(x){return x.date===new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'});});
-  document.getElementById('countList').innerHTML=(S.counts||[]).slice(-4).reverse().map(function(x){return '<div class="logrow"><div><div class="tiny muted">'+x.date+'</div>'+x.text+'</div></div>';}).join('');
+  document.getElementById('countList').innerHTML=(S.counts||[]).slice(-4).reverse().map(function(x){return '<div class="logrow"><div><div class="tiny muted">'+x.date+'</div>'+x.text+'</div></div>';}).join('');var _ct=document.getElementById('countTally');if(_ct){var _n=(S.counts||[]).length;_ct.textContent=_n?('✦ '+_n+' moment'+(_n>1?'s':'')+' banked — keep giving yourself the credit'):'';}
   var rdone=S.rites[riteKey()]||{};
   document.getElementById('ritesList').innerHTML='<div class="tags">'+RITES.map(function(r){var d=!!rdone[r.id];return '<button class="'+(d?'on':'')+'" onclick="toggleRite(\''+r.id+'\')">'+r.t+'</button>';}).join('')+'</div>';
 }
