@@ -1543,10 +1543,12 @@ function renderCycleLog(){
   h+=sleepSeg(cl.sleep.q);
   h+='<div class="ksec">🌙 Evening</div>';
   if(hasCycle())h+='<label class="fl">Flow</label><div class="tags">'+FLOW.map(function(fn,i){return '<button class="'+(cl.flow===i?'on':'')+'" onclick="setFlow('+i+')">'+fn+'</button>';}).join('')+'</div>';
+  if(hasCycle()&&(cl.flow||0)>=1){var _isP=isPeriodDay(dk);h+='<div style="margin-top:10px"><label class="fl">Is this your period?</label><div class="tags"><button class="'+(_isP?'on':'')+'" onclick="setPeriod(true)">🩸 Yes — my period</button><button class="'+(!_isP?'on':'')+'" onclick="setPeriod(false)">Just spotting</button></div><div class="note" style="margin-top:4px">'+(_isP?'Counts toward your cycle length + predictions.':'Logged as spotting — won\'t shift your cycle math.')+'</div></div>';}
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><label class="fl" style="margin:0">Symptoms (0–3)</label><span class="cv" style="font-size:13.5px" onclick="openTrackedSyms()">customize</span></div>';
   trackedSyms().forEach(function(id){var sy=symById(id);if(sy)h+=symSeg(sy,cl.sym[id]);});
   h+='<div class="ksec">Exertion · 0–3</div>'+exSeg('p','Physical',cl.exertion.p)+exSeg('m','Mental',cl.exertion.m)+exSeg('e','Emotional',cl.exertion.e)+exSeg('s','Social',cl.exertion.s);
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px"><div class="ksec" style="margin:0">Today I…</div><span class="cv" style="font-size:13.5px" onclick="openTrackedEvents()">customize</span></div><div class="tags">'+trackedEvents().map(function(eid){var ev=eventById(eid);return ev?'<button class="'+(cl.events.indexOf(eid)>=0?'on':'')+'" onclick="toggleEvent(\''+eid+'\')">'+ev.emoji+' '+ev.label+'</button>':'';}).join('')+'</div>';
+  trackedEvents().forEach(function(eid){if(!EVENT_DETAIL[eid]||cl.events.indexOf(eid)<0)return;var cfg=EVENT_DETAIL[eid],ev=eventById(eid),cur=(cl.eventDetails&&cl.eventDetails[eid])||'';var hist=eventDetailHistory(eid).filter(function(x){return x!==cur;}).slice(0,6);h+='<div style="margin-top:8px"><label class="fl">'+(ev?ev.emoji+' ':'')+cfg.label+'</label><input id="evd_'+eid+'" value="'+esc(cur)+'" placeholder="'+cfg.ph+'" oninput="setEventDetail(\''+eid+'\',this.value)" autocomplete="off">'+(hist.length?'<div class="tags" style="margin-top:6px">'+hist.map(function(v){return '<button onclick="pickEventDetail(\''+eid+'\',this)">'+esc(v)+'</button>';}).join('')+'</div>':'')+'</div>';});
   if(hasCycle()){
     h+='<div class="ksec">Mood</div><div class="tags">'+MOOD_TAGS.map(function(m){return '<button class="'+(cl.mood.indexOf(m)>=0?'on':'')+'" onclick="toggleMood(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
     h+='<div class="ksec">Sex & drive</div><div class="tags">'+SEX_TAGS.map(function(m){return '<button class="'+(cl.sex.indexOf(m)>=0?'on':'')+'" onclick="toggleSex(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
@@ -1556,7 +1558,8 @@ function renderCycleLog(){
   h+='<button class="act" style="width:100%;margin-top:14px" onclick="closeCycleLog()">Done</button>';
   b.innerHTML=h;
 }
-function setFlow(i){var cl=cycleLogFor(_logDate);cl.flow=i;persist();recomputeCycle();renderCycleLog();}
+function setFlow(i){var cl=cycleLogFor(_logDate);cl.flow=i;if(i===0)delete cl.period;persist();recomputeCycle();renderCycleLog();}
+function setPeriod(b){var cl=cycleLogFor(_logDate);cl.period=!!b;persist();recomputeCycle();renderCycleLog();}
 function setSym(id,v){var cl=cycleLogFor(_logDate);if(cl.sym[id]===v){delete cl.sym[id];}else cl.sym[id]=v;persist();renderCycleLog();}
 function setSleepBed(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.bed=v;persist();updateHibNote();}
 function setSleepWake(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.wake=v;persist();updateHibNote();}
@@ -1565,6 +1568,9 @@ function hoursInBed(bed,wake){if(!bed||!wake)return null;function mn(t){var pp=t
 function setSleepQ(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.q=v;persist();renderCycleLog();}
 function setExertion(k,v){var cl=cycleLogFor(_logDate);if(!cl.exertion)cl.exertion={};cl.exertion[k]=v;persist();renderCycleLog();}
 function toggleEvent(id){var cl=cycleLogFor(_logDate);if(!cl.events)cl.events=[];var i=cl.events.indexOf(id);if(i>=0)cl.events.splice(i,1);else cl.events.push(id);persist();renderCycleLog();}
+function setEventDetail(id,v){var cl=cycleLogFor(_logDate);if(!cl.eventDetails)cl.eventDetails={};if(v)cl.eventDetails[id]=v;else delete cl.eventDetails[id];persist();}
+function pickEventDetail(id,btn){var v=btn.textContent;var inp=document.getElementById('evd_'+id);if(inp)inp.value=v;setEventDetail(id,v);}
+function eventDetailHistory(id){var seen={},out=[];Object.keys(S.cycleLog||{}).sort().reverse().forEach(function(dk){var ed=S.cycleLog[dk].eventDetails;if(ed&&ed[id]&&!seen[ed[id]]){seen[ed[id]]=1;out.push(ed[id]);}});return out;}
 function toggleMood(m){var cl=cycleLogFor(_logDate);if(!cl.mood)cl.mood=[];var i=cl.mood.indexOf(m);if(i>=0)cl.mood.splice(i,1);else cl.mood.push(m);persist();renderCycleLog();}
 function toggleSex(m){var cl=cycleLogFor(_logDate);if(!cl.sex)cl.sex=[];var i=cl.sex.indexOf(m);if(i>=0)cl.sex.splice(i,1);else cl.sex.push(m);persist();renderCycleLog();}
 function setDischarge(o){var cl=cycleLogFor(_logDate);cl.discharge=(cl.discharge===o?'':o);persist();renderCycleLog();}
@@ -1600,12 +1606,14 @@ function renderCalendar(){
   var first=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate(),tk=todayKey(),pred=predictedPeriodSet(),html='';
   for(var i=0;i<first;i++)html+='<div class="mcell empty"></div>';
   for(var d=1;d<=dim;d++){var dk=dkOf(y,m,d),ph=phaseForDay(dayNumFor(dk)),cl=(S.cycleLog||{})[dk],flow=cl&&cl.flow||0,symN=cl&&cl.sym?Object.keys(cl.sym).length:0;
-    var bg=flow>=1?FLOW_COLOR[flow]:(hasCycle()?ph.color:'#2A2440'),op=flow>=1?'.9':(hasCycle()?'.32':'.16'),marks='';
-    if(hasCycle()&&pred[dk]&&flow<1)marks+='<div class="cdot" style="border:1.5px solid #E59DAE;background:transparent"></div>';
+    var per=isPeriodDay(dk);
+    var bg=per?FLOW_COLOR[flow||2]:(hasCycle()?ph.color:'#2A2440'),op=per?'.9':(hasCycle()?'.32':'.16'),marks='';
+    if(!per&&flow>=1)marks+='<div class="cdot" style="background:#7A3B4A"></div>';
+    if(hasCycle()&&pred[dk]&&!per)marks+='<div class="cdot" style="border:1.5px solid #E59DAE;background:transparent"></div>';
     if(symN)marks+='<div class="cdot" style="background:var(--candle)"></div>';
     html+='<div class="mcell'+(dk===tk?' today':'')+'" onclick="calPick(\''+dk+'\')"><div class="tint" style="background:'+bg+';opacity:'+op+'"></div><div class="dn">'+d+'</div><div class="cmk">'+marks+'</div></div>';}
   document.getElementById('calGrid').innerHTML=html;
-  document.getElementById('calLegend').innerHTML=(hasCycle()?'<span><i style="background:#9B5C6E"></i>period</span><span><i style="border:1.5px solid #E59DAE;background:transparent"></i>predicted</span>':'')+'<span><i style="background:var(--candle)"></i>symptoms</span>';
+  document.getElementById('calLegend').innerHTML=(hasCycle()?'<span><i style="background:#9B5C6E"></i>period</span><span><i style="background:#7A3B4A"></i>spotting</span><span><i style="border:1.5px solid #E59DAE;background:transparent"></i>predicted</span>':'')+'<span><i style="background:var(--candle)"></i>symptoms</span>';
   var st=cycleStats();document.getElementById('calStats').innerHTML='~'+st.len+'-day cycle · ~'+st.plen+'-day period · from '+st.logged+' logged period'+(st.logged!==1?'s':'');
 }
 function calPick(dk){closeCalendar();openCycleLog(dk);}
@@ -1636,8 +1644,8 @@ function cycleRingSVG(ci){
 /* ===== PERIOD TRACKER ENGINE ===== */
 function cycleLogFor(dk){if(!S.cycleLog)S.cycleLog={};if(!S.cycleLog[dk])S.cycleLog[dk]={flow:0,sym:{},note:''};if(!S.cycleLog[dk].sym)S.cycleLog[dk].sym={};return S.cycleLog[dk];}
 function daysBetween(a,b){return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000);}
-function isPeriodDay(dk){return ((S.cycleLog&&S.cycleLog[dk]||{}).flow||0)>=1;}
-function flowDays(){return Object.keys(S.cycleLog||{}).filter(function(d){return (S.cycleLog[d].flow||0)>=1;}).sort();}
+function isPeriodDay(dk){var cl=(S.cycleLog&&S.cycleLog[dk])||{};if(cl.period===true)return true;if(cl.period===false)return false;return (cl.flow||0)>=2;}
+function flowDays(){return Object.keys(S.cycleLog||{}).filter(function(d){return isPeriodDay(d);}).sort();}
 function periodStarts(){var days=flowDays(),starts=[],prev=null;days.forEach(function(d){if(!prev||daysBetween(prev,d)>1)starts.push(d);prev=d;});return starts;}
 function periodRuns(){var days=flowDays(),runs=[],cur=null,prev=null;days.forEach(function(d){if(!prev||daysBetween(prev,d)>1){if(cur)runs.push(cur);cur={start:d,len:1};}else cur.len++;prev=d;});if(cur)runs.push(cur);return runs;}
 function cycleLengths(){var st=periodStarts(),out=[];for(var i=1;i<st.length;i++){var g=daysBetween(st[i-1],st[i]);if(g>=15&&g<=60)out.push(g);}return out;}
@@ -1669,6 +1677,7 @@ var MASTER_EVENTS=[
  {id:'infusion',label:'Infusion',emoji:'💧'},{id:'massage',label:'Massage',emoji:'💆'},{id:'antibiotics',label:'Antibiotics',emoji:'💊'},{id:'albuterol',label:'Albuterol',emoji:'🫁'},{id:'infection',label:'Infection',emoji:'🦠'},{id:'bigstress',label:'Big stress',emoji:'😣'},{id:'travel',label:'Travel',emoji:'✈️'}
 ];
 var DEFAULT_EVENTS=['walk','yoga','strength','infusion','massage','antibiotics','albuterol','infection'];
+var EVENT_DETAIL={infusion:{label:'What did you get?',ph:'e.g. 1000 ml saline'},antibiotics:{label:'Which antibiotic?',ph:'e.g. Doxycycline 100 mg'}};
 var MOOD_TAGS=['calm','content','happy','frisky','low','flat / numb','anxious','irritable','sad','overwhelmed'];
 var SEX_TAGS=['no sex','protected','unprotected','oral','anal','masturbation','sensual touch','toys','orgasm','no orgasm','high drive','low drive'];
 var DISCHARGE_OPTS=['none','creamy','watery','sticky','egg-white','spotting','unusual','clumpy'];
