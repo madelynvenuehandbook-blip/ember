@@ -1,6 +1,6 @@
 /* The Ember — offline service worker (cache-first for reliable offline on iOS).
    Bump CACHE (e.g. ember-v34) whenever index.html changes so phones pull the new version. */
-const CACHE = 'ember-v35';
+const CACHE = 'ember-v36';
 const CORE = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', function (e) {
