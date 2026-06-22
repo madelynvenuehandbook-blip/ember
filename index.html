@@ -254,7 +254,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 .frow:first-child{border-top:none}
 .frow .fi{flex:1;min-width:0}
 .frow .fn{color:var(--cream);font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.frow .fm{font-size:13px;color:var(--muted);margin-top:2px}
+.frow .fmeta{font-size:13px;color:var(--muted);margin-top:2px}
 .frow .fk{flex:0 0 auto;color:var(--candle);font-size:15px}
 .fsrc{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px;border-top:1px solid var(--line);padding-top:10px}
 .loadmsg{text-align:center;color:var(--muted);font-size:14px;padding:14px}
@@ -1053,7 +1053,7 @@ function renderDrinks(){
 }
 
 /* ===== MEALS ENGINE ===== */
-var _meal='breakfast', _tab='all', _servCtx=null, _offResults=[], _usdaResults=[], _usdaLimited=false, _searchT=null, _recipeDraft=null;
+var _meal='breakfast', _tab='all', _servCtx=null, _offResults=[], _usdaResults=[], _usdaLimited=false, _searchT=null, _renderT=null, _recipeDraft=null;
 var _viewDate=null;
 function viewKey(){return _viewDate||todayKey();}
 function shiftDateKey(dk,delta){var d=new Date(dk+'T00:00:00');d.setDate(d.getDate()+delta);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -1130,8 +1130,8 @@ function openAddFood(mk){_meal=mk;_tab='all';_offResults=[];_usdaResults=[];_usd
 function closeFoodSheet(){hideEl('foodSheet');stopScan();}
 function renderTabs(){var tabs=[['all','All'],['recent','Recent'],['frequent','Frequent'],['myfoods','My Foods'],['recipes','Saved meals']];document.getElementById('searchTabs').innerHTML=tabs.map(function(t){return '<button class="'+(_tab===t[0]?'on':'')+'" onclick="setTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');}
 function setTab(t){_tab=t;renderTabs();renderResults(document.getElementById('foodSearch').value.trim());}
-function onSearchInput(){var q=document.getElementById('foodSearch').value.trim();renderResults(q);if(_searchT)clearTimeout(_searchT);if(q.length>=2&&navigator.onLine){_searchT=setTimeout(function(){usdaSearch(q);offSearch(q);},500);}}
-function frow(name,meta,kcal,onclick){return '<div class="frow" onclick="'+onclick+'"><div class="fi"><div class="fn">'+name+'</div>'+(meta?'<div class="fm">'+meta+'</div>':'')+'</div><div class="fk">'+(kcal!=null?Math.round(kcal)+' cal':'')+'</div></div>';}
+function onSearchInput(){var q=document.getElementById('foodSearch').value.trim();if(_renderT)clearTimeout(_renderT);_renderT=setTimeout(function(){renderResults(q);},60);if(_searchT)clearTimeout(_searchT);if(q.length>=2&&navigator.onLine){_searchT=setTimeout(function(){usdaSearch(q);offSearch(q);},450);}}
+function frow(name,meta,kcal,onclick){return '<div class="frow" onclick="'+onclick+'"><div class="fi"><div class="fn">'+name+'</div>'+(meta?'<div class="fmeta">'+meta+'</div>':'')+'</div><div class="fk">'+(kcal!=null?Math.round(kcal)+' cal':'')+'</div></div>';}
 function entryHistory(){var out=[];Object.keys(S.diary).sort().reverse().forEach(function(dk){flatDay(dk).forEach(function(e){if(e.fid||e.rid)out.push(e);});});return out;}
 function recentFoods(){var seen={},out=[];entryHistory().forEach(function(e){var key=e.rid?('r'+e.rid):e.fid;if(key&&!seen[key]){seen[key]=1;out.push(e);}});return out.slice(0,30);}
 function frequentFoods(){var cnt={},any={};entryHistory().forEach(function(e){var key=e.rid?('r'+e.rid):e.fid;if(!key)return;cnt[key]=(cnt[key]||0)+1;any[key]=e;});return Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];}).map(function(k){return any[k];}).slice(0,30);}
@@ -1185,11 +1185,16 @@ function lookupBarcode(code){flash('Looking up…');fetch('https://world.openfoo
 function openServFood(id,edit){var f=foodById(id);if(!f)return;_servCtx={kind:'food',ref:f,servIdx:0,grams:f.serv[0][1],qty:1,meal:_meal,leftover:false,edit:edit||null};servRender();showEl('backdrop');showEl('servSheet');}
 function openServRecipe(id,edit){var r=recipeById(id);if(!r)return;_servCtx={kind:'recipe',ref:r,qty:1,meal:_meal,edit:edit||null};servRender();showEl('backdrop');showEl('servSheet');}
 function editEntry(mk,id){var e=flatDay(viewKey()).filter(function(x){return String(x.id)===String(id);})[0];if(!e)return;_meal=mk;if(e.rid&&recipeById(e.rid)){openServRecipe(e.rid,{meal:mk,id:id});if(_servCtx){_servCtx.qty=e.qty||1;servRender();}}else if(e.fid&&foodById(e.fid)){openServFood(e.fid,{meal:mk,id:id});if(_servCtx){var f=_servCtx.ref;var si=f.serv.map(function(x){return x[0];}).indexOf(e.serv);_servCtx.servIdx=si>=0?si:0;_servCtx.grams=si>=0?f.serv[si][1]:(e.grams||100);_servCtx.qty=e.qty||1;servRender();}}else{flash('Logged manually — delete and re-add to change.');}}
+var SERV_UNITS=[['tsp',5,'teaspoon (tsp)'],['tbsp',15,'tablespoon (tbsp)'],['floz',30,'fluid ounce (fl oz)'],['cup',240,'cup'],['oz',28.35,'ounce (oz)'],['ml',1,'milliliter (ml)'],['g',1,'gram (g)']];
+var SERV_UNIT_VOL={tsp:1,tbsp:1,floz:1,cup:1,ml:1};
 function servRender(){var c=_servCtx;if(!c)return;var h='';
   if(c.kind==='food'){var f=c.ref;var n=nutrFromV(f.v,c.grams*c.qty);
-    h+='<div class="svn">'+(f.br?f.br+' ':'')+f.n+'</div><div class="svb">per '+c.grams+' g serving</div>';
-    h+='<div class="svrow"><div><label class="fl">Serving</label><select onchange="servSel(this.value)">'+f.serv.map(function(s,i){return '<option value="'+i+'"'+(i===c.servIdx?' selected':'')+'>'+s[0]+'</option>';}).join('')+'<option value="g"'+(c.servIdx<0?' selected':'')+'>custom grams…</option></select></div><div><label class="fl">Quantity</label><input type="number" inputmode="decimal" value="'+c.qty+'" oninput="servQty(this.value)"></div></div>';
-    if(c.servIdx<0)h+='<div style="margin-top:10px"><label class="fl">Grams</label><input type="number" inputmode="decimal" value="'+c.grams+'" oninput="servGrams(this.value)"></div>';
+    var _short=(c.unit==='floz'?'fl oz':c.unit),_tot=Math.round(c.grams*c.qty),_per=Math.round(c.grams*10)/10;
+    var _sub=c.unit?('per '+_short+' ≈ '+_per+' g · '+_tot+' g total'):('per '+c.grams+' g serving');
+    h+='<div class="svn">'+(f.br?f.br+' ':'')+f.n+'</div><div class="svb">'+_sub+'</div>';
+    h+='<div class="svrow"><div><label class="fl">Serving</label><select onchange="servSel(this.value)">'+f.serv.map(function(s,i){return '<option value="'+i+'"'+(c.servIdx===i?' selected':'')+'>'+s[0]+'</option>';}).join('')+'<optgroup label="Measure">'+SERV_UNITS.map(function(u){return '<option value="u:'+u[0]+'"'+(c.unit===u[0]?' selected':'')+'>'+u[2]+'</option>';}).join('')+'</optgroup><option value="g"'+(c.servIdx===-1?' selected':'')+'>custom grams…</option></select></div><div><label class="fl">'+(c.unit?'Amount':'Quantity')+'</label><input type="number" inputmode="decimal" value="'+c.qty+'" oninput="servQty(this.value)"></div></div>';
+    if(c.servIdx===-1)h+='<div style="margin-top:10px"><label class="fl">Grams</label><input type="number" inputmode="decimal" value="'+c.grams+'" oninput="servGrams(this.value)"></div>';
+    if(c.unit&&SERV_UNIT_VOL[c.unit])h+='<div class="svb" style="margin-top:6px;opacity:.78">Volume → grams is an estimate (water density). For exact macros use grams or a labeled serving.</div>';
     h+=svPrev(n);
     if((f.h||0)>=1)h+='<div class="note" style="margin-top:6px">Histamine: '+histWord(f.h)+'</div>';
     h+='<div class="toggle'+(c.leftover?' on':'')+'" onclick="servLeftover()"><div class="sw"></div><div>Leftover (cooked &gt;24h ago)</div></div>';
@@ -1202,14 +1207,14 @@ function servRender(){var c=_servCtx;if(!c)return;var h='';
   h+='<button class="act" style="width:100%" onclick="servAdd()">'+(c.edit?'Update':'Add to '+MEAL_LABEL[c.meal])+'</button>';
   document.getElementById('servBody').innerHTML=h;}
 function svPrev(n){return '<div class="svprev"><div class="pv"><div class="pn">'+Math.round(n.kcal)+'</div><div class="pl">cal</div></div><div class="pv"><div class="pn">'+Math.round(n.p)+'</div><div class="pl">protein</div></div><div class="pv"><div class="pn">'+Math.round(n.c)+'</div><div class="pl">carb</div></div><div class="pv"><div class="pn">'+Math.round(n.f)+'</div><div class="pl">fat</div></div></div>';}
-function servSel(val){var c=_servCtx,f=c.ref;if(val==='g'){c.servIdx=-1;}else{c.servIdx=+val;c.grams=f.serv[c.servIdx][1];}servRender();}
+function servSel(val){var c=_servCtx,f=c.ref;if(val==='g'){c.servIdx=-1;c.unit=null;}else if(val.indexOf('u:')===0){var k=val.slice(2);for(var i=0;i<SERV_UNITS.length;i++){if(SERV_UNITS[i][0]===k){c.unit=k;c.grams=SERV_UNITS[i][1];break;}}c.servIdx=-2;}else{c.servIdx=+val;c.unit=null;c.grams=f.serv[c.servIdx][1];}servRender();}
 function servGrams(v){_servCtx.grams=num(v);servRender();}
 function servQty(v){_servCtx.qty=num(v)||1;servRender();}
 function servMeal(mk){_servCtx.meal=mk;servRender();}
 function servLeftover(){_servCtx.leftover=!_servCtx.leftover;servRender();}
 function closeServ(){hideEl('servSheet');hideEl('reactSheet');hideEl('backdrop');_servCtx=null;}
 function servAdd(){var c=_servCtx;if(!c)return;var vph=phaseKeyForDate(viewKey()),vt=(viewKey()===todayKey()?nowTime():'');var e,d=diaryFor(viewKey());
-  if(c.kind==='food'){var f=c.ref,n=nutrFromV(f.v,c.grams*c.qty),nx=nutrX(f,c.grams*c.qty);e={id:Date.now()+Math.floor(Math.random()*999),name:(f.br?f.br+' ':'')+f.n,fid:f.id,qty:c.qty,serv:(c.servIdx>=0?f.serv[c.servIdx][0]:c.grams+' g'),grams:c.grams,kcal:n.kcal,p:n.p,c:n.c,f:n.f,fib:n.fib,sug:n.sug,sod:n.sod,pot:n.pot,iron:n.iron,mag:n.mag,se:nx.se,zn:nx.zn,io:nx.io,ca:nx.ca,h:(f.h||0),leftover:!!c.leftover,phase:vph,time:vt,meal:c.meal};}
+  if(c.kind==='food'){var f=c.ref,n=nutrFromV(f.v,c.grams*c.qty),nx=nutrX(f,c.grams*c.qty);e={id:Date.now()+Math.floor(Math.random()*999),name:(f.br?f.br+' ':'')+f.n,fid:f.id,qty:c.qty,serv:(c.unit?(c.unit==='floz'?'fl oz':c.unit):(c.servIdx>=0?f.serv[c.servIdx][0]:c.grams+' g')),grams:c.grams,kcal:n.kcal,p:n.p,c:n.c,f:n.f,fib:n.fib,sug:n.sug,sod:n.sod,pot:n.pot,iron:n.iron,mag:n.mag,se:nx.se,zn:nx.zn,io:nx.io,ca:nx.ca,h:(f.h||0),leftover:!!c.leftover,phase:vph,time:vt,meal:c.meal};}
   else{var r=c.ref,pr=r.per;e={id:Date.now()+Math.floor(Math.random()*999),name:r.name,rid:r.id,qty:c.qty,serv:c.qty+' serving',grams:0,kcal:pr.kcal*c.qty,p:pr.p*c.qty,c:pr.c*c.qty,f:pr.f*c.qty,fib:(pr.fib||0)*c.qty,sug:(pr.sug||0)*c.qty,sod:(pr.sod||0)*c.qty,pot:(pr.pot||0)*c.qty,iron:(pr.iron||0)*c.qty,mag:(pr.mag||0)*c.qty,se:0,zn:0,io:0,ca:0,h:0,leftover:false,phase:vph,time:vt,meal:c.meal};}
   if(c.edit){var od=diaryFor(viewKey());od[c.edit.meal]=(od[c.edit.meal]||[]).filter(function(x){return String(x.id)!==String(c.edit.id);});}
   d[c.meal].push(e);persist();closeServ();closeFoodSheet();renderMeals();renderToday();renderPatterns();
