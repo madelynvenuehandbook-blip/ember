@@ -413,6 +413,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       <button class="ghost" onclick="openReactReport()">✨ Reactions</button>
     </div>
 
+    <div onclick="openAddFoodAny()" style="display:flex;align-items:center;gap:10px;border:1px solid var(--candle);background:rgba(232,185,106,.08);border-radius:14px;padding:15px 16px;margin-bottom:14px;cursor:pointer;color:var(--candle);font-size:16px">🔍 Search any food, then pick a meal</div>
     <div id="diaryBody"></div>
   </div>
 
@@ -1112,7 +1113,7 @@ function renderMeals(){
   MEALSECS.forEach(function(mk){
     var list=d[mk],sub=sumEntries(list);
     html+='<div class="card mealsec"><div class="mealhead"><div class="mn">'+MEAL_LABEL[mk]+'</div><div class="mk">'+Math.round(sub.kcal)+' cal</div></div>';
-    html+=list.map(function(e){return '<div class="entry"><div class="ei" onclick="editEntry(\''+mk+'\',\''+e.id+'\')"><div class="en">'+e.name+'</div><div class="em2">'+(e.qty&&e.qty!==1?e.qty+' × ':'')+e.serv+' · '+Math.round(e.p)+'p '+Math.round(e.c)+'c '+Math.round(e.f)+'f</div></div><div class="ec">'+Math.round(e.kcal)+'</div><div class="x" onclick="delEntry(\''+mk+'\',\''+e.id+'\')">×</div></div>';}).join('');
+    html+=list.map(function(e){return '<div class="entry"><div class="ei" onclick="editEntry(\''+mk+'\',\''+e.id+'\')"><div class="en">'+e.name+'</div><div class="em2">'+(e.qty&&e.qty!==1?e.qty+' × ':'')+e.serv+' · '+Math.round(e.p)+'p '+Math.round(e.c)+'c '+Math.round(e.f)+'f</div></div><div class="erx" onclick="openReaction(\''+mk+'\',\''+e.id+'\')">'+reactEmoji(e.reaction)+'</div><div class="ec">'+Math.round(e.kcal)+'</div><div class="x" onclick="delEntry(\''+mk+'\',\''+e.id+'\')">×</div></div>';}).join('');
     html+='<button class="addbtn" onclick="openAddFood(\''+mk+'\')">＋ Add food</button></div>';
   });
   document.getElementById('diaryBody').innerHTML=html;
@@ -1124,6 +1125,7 @@ function copyPrevDay(){var dk=viewKey();var prev=shiftDateKey(dk,-1);var yd=S.di
 /* ---- food search sheet ---- */
 function showEl(id){document.getElementById(id).classList.add('open');}
 function hideEl(id){document.getElementById(id).classList.remove('open');}
+function openAddFoodAny(){var h=new Date().getHours();openAddFood(h<11?'breakfast':h<15?'lunch':h<21?'dinner':'snacks');document.getElementById('sheetTitle').textContent='Add food · pick the meal when you log';}
 function openAddFood(mk){_meal=mk;_tab='all';_offResults=[];_usdaResults=[];_usdaLimited=false;document.getElementById('sheetTitle').textContent='Add to '+MEAL_LABEL[mk];document.getElementById('foodSearch').value='';showEl('foodSheet');renderTabs();renderResults('');setTimeout(function(){var i=document.getElementById('foodSearch');if(i)i.focus();},150);}
 function closeFoodSheet(){hideEl('foodSheet');stopScan();}
 function renderTabs(){var tabs=[['all','All'],['recent','Recent'],['frequent','Frequent'],['myfoods','My Foods'],['recipes','Saved meals']];document.getElementById('searchTabs').innerHTML=tabs.map(function(t){return '<button class="'+(_tab===t[0]?'on':'')+'" onclick="setTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');}
@@ -1162,7 +1164,7 @@ function reEntryRow(e){var ref=e.rid?('openServRecipe(\''+e.rid+'\')'):('openSer
 /* ---- Open Food Facts ---- */
 function num(x){var n=parseFloat(x);return isNaN(n)?0:n;}
 function mapOFF(prod){var nu=prod.nutriments||{};var v=[num(nu['proteins_100g']),num(nu['carbohydrates_100g']),num(nu['fat_100g']),num(nu['fiber_100g']),num(nu['sugars_100g']),Math.round((num(nu['sodium_100g'])||num(nu['salt_100g'])/2.5)*1000),Math.round(num(nu['potassium_100g'])*1000),r1(num(nu['iron_100g'])*1000),Math.round(num(nu['magnesium_100g'])*1000)];var g=num(prod.serving_quantity)||100;var sl=prod.serving_size||(g+' g');var nm=prod.product_name||'Unknown food';var x={se:Math.round(num(nu['selenium_100g'])*1e6),zn:r1(num(nu['zinc_100g'])*1000),io:Math.round(num(nu['iodine_100g'])*1e6),ca:Math.round(num(nu['calcium_100g'])*1000)};var h=classifyHistamine(nm+' '+(prod.brands||'')+' '+(prod.categories||'')+' '+(prod.ingredients_text||''));return {id:'off_'+(prod.code||nm),n:nm,br:(prod.brands||'').split(',')[0],a:[],serv:[[sl,g],['100 g',100]],v:v,x:x,h:h,src:'off'};}
-function offSearch(q){var host=document.getElementById('searchResults');var url='https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=20&fields=code,product_name,brands,categories,ingredients_text,nutriments,serving_size,serving_quantity';fetch(url).then(function(r){return r.json();}).then(function(j){_offResults=(j.products||[]).filter(function(p){return p.product_name&&p.nutriments&&p.nutriments['proteins_100g']!=null;}).map(mapOFF).slice(0,20);renderResults(document.getElementById('foodSearch').value.trim());}).catch(function(){});}
+function offSearch(q){var host=document.getElementById('searchResults');var url='https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=40&fields=code,product_name,brands,categories,ingredients_text,nutriments,serving_size,serving_quantity';fetch(url).then(function(r){return r.json();}).then(function(j){_offResults=(j.products||[]).filter(function(p){return p.product_name&&p.nutriments&&p.nutriments['proteins_100g']!=null;}).map(mapOFF).slice(0,40);renderResults(document.getElementById('foodSearch').value.trim());}).catch(function(){});}
 function pickOff(i){var f=_offResults[i];if(!f)return;if(!foodById(f.id)){S.customFoods.push(f);persist();}openServFood(f.id);}
 function titleCase(s){return String(s||'').toLowerCase().replace(/\b\w/g,function(c){return c.toUpperCase();});}
 function mapUSDA(f){var nut={};(f.foodNutrients||[]).forEach(function(n){if(n.nutrientNumber!=null)nut[n.nutrientNumber]=n.value;});function gn(k){return num(nut[k]);}
@@ -1173,8 +1175,8 @@ function mapUSDA(f){var nut={};(f.foodNutrients||[]).forEach(function(n){if(n.nu
   var servLabel=f.householdServingFullText||(f.servingSize?(f.servingSize+' '+(f.servingSizeUnit||'g').toLowerCase()):'100 g');
   var nm=titleCase(f.description||'food'),br=titleCase(f.brandOwner||f.brandName||'');
   return {id:'usda_'+f.fdcId,n:nm,br:br,a:[],serv:[[servLabel,sg||100],['100 g',100]],v:v,x:x,h:classifyHistamine((f.description||'')+' '+br),src:'usda'};}
-function usdaSearch(q){var key=S.usdaKey||'DEMO_KEY';var url='https://api.nal.usda.gov/fdc/v1/foods/search?api_key='+key+'&query='+encodeURIComponent(q)+'&pageSize=25&dataType=Branded&dataType=Foundation&dataType=SR%20Legacy';
-  fetch(url).then(function(r){if(r.status===429||r.status===403){_usdaLimited=true;return null;}return r.json();}).then(function(j){if(!j){renderResults(document.getElementById('foodSearch').value.trim());return;}_usdaLimited=false;_usdaResults=(j.foods||[]).filter(function(f){return f.foodNutrients&&f.foodNutrients.length&&num((f.foodNutrients.filter(function(n){return n.nutrientNumber==='208';})[0]||{}).value)>0;}).map(mapUSDA).slice(0,25);renderResults(document.getElementById('foodSearch').value.trim());}).catch(function(){});}
+function usdaSearch(q){var key=S.usdaKey||'DEMO_KEY';var url='https://api.nal.usda.gov/fdc/v1/foods/search?api_key='+key+'&query='+encodeURIComponent(q)+'&pageSize=60&dataType=Branded&dataType=Foundation&dataType=SR%20Legacy';
+  fetch(url).then(function(r){if(r.status===429||r.status===403){_usdaLimited=true;return null;}return r.json();}).then(function(j){if(!j){renderResults(document.getElementById('foodSearch').value.trim());return;}_usdaLimited=false;_usdaResults=(j.foods||[]).filter(function(f){return f.foodNutrients&&f.foodNutrients.length&&num((f.foodNutrients.filter(function(n){return n.nutrientNumber==='208';})[0]||{}).value)>0;}).map(mapUSDA).slice(0,40);renderResults(document.getElementById('foodSearch').value.trim());}).catch(function(){});}
 function pickUsda(i){var f=_usdaResults[i];if(!f)return;if(!foodById(f.id)){S.customFoods.push(f);persist();}openServFood(f.id);}
 function setUsdaKey(){var k=prompt('Paste your free USDA FoodData Central API key for full brand search.\n\nGet one instantly (free, ~30 sec) at:\nfdc.nal.usda.gov/api-key-signup\n\nLeave blank to use the limited demo.');if(k!=null){S.usdaKey=k.trim()||'DEMO_KEY';persist();flash(k.trim()?'Search key saved.':'Using demo key.');var q=document.getElementById('foodSearch');if(q&&q.value.trim())usdaSearch(q.value.trim());}}
 function lookupBarcode(code){flash('Looking up…');fetch('https://world.openfoodfacts.org/api/v0/product/'+encodeURIComponent(code)+'.json').then(function(r){return r.json();}).then(function(j){if(j.status===1&&j.product){var f=mapOFF(j.product);f.id='off_'+code;if(!foodById(f.id)){S.customFoods.push(f);persist();}if(!document.getElementById('foodSheet').classList.contains('open'))showEl('foodSheet');openServFood(f.id);}else{flash('Not found. Search by name.');}}).catch(function(){flash('Lookup failed.');});}
