@@ -125,6 +125,8 @@ label.fl{font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var
 .ct .when{font-size:12.1px;letter-spacing:.12em;text-transform:uppercase;color:var(--candle);display:block;margin-bottom:4px}
 .ct .nt{font-size:13.9px;color:var(--moonlight);display:block;margin-top:5px;font-family:var(--sans);line-height:1.5}
 .tag{display:inline-block;font-size:10.6px;letter-spacing:.08em;text-transform:uppercase;border-radius:20px;padding:3px 9px;margin-left:7px;vertical-align:middle}
+.supptime{display:inline-block;width:106px;box-sizing:border-box;background:rgba(79,182,140,.18);color:#4FB68C;border:1px solid rgba(79,182,140,.4);border-radius:8px;padding:4px 8px;font-size:12.5px;font-family:inherit;margin-left:7px;vertical-align:middle}
+.supptime::-webkit-calendar-picker-indicator{filter:invert(.7) sepia(.4) saturate(4) hue-rotate(90deg);opacity:.7;cursor:pointer}
 .tag.phase{background:rgba(232,185,106,.16);color:var(--candle)}
 .tag.hist{background:rgba(155,92,110,.22);color:#E59DAE}
 
@@ -1607,13 +1609,13 @@ function renderCalendar(){
   for(var i=0;i<first;i++)html+='<div class="mcell empty"></div>';
   for(var d=1;d<=dim;d++){var dk=dkOf(y,m,d),ph=phaseForDay(dayNumFor(dk)),cl=(S.cycleLog||{})[dk],flow=cl&&cl.flow||0,symN=cl&&cl.sym?Object.keys(cl.sym).length:0;
     var per=isPeriodDay(dk);
-    var bg=per?FLOW_COLOR[flow||2]:(hasCycle()?ph.color:'#2A2440'),op=per?'.9':(hasCycle()?'.32':'.16'),marks='';
+    var bg=per?FLOW_COLOR[flow||2]:(hasCycle()?ph.color:'#2A2440'),op=per?'.9':(hasCycle()?'.55':'.16'),marks='';
     if(!per&&flow>=1)marks+='<div class="cdot" style="background:#7A3B4A"></div>';
     if(hasCycle()&&pred[dk]&&!per)marks+='<div class="cdot" style="border:1.5px solid #E59DAE;background:transparent"></div>';
     if(symN)marks+='<div class="cdot" style="background:var(--candle)"></div>';
     html+='<div class="mcell'+(dk===tk?' today':'')+'" onclick="calPick(\''+dk+'\')"><div class="tint" style="background:'+bg+';opacity:'+op+'"></div><div class="dn">'+d+'</div><div class="cmk">'+marks+'</div></div>';}
   document.getElementById('calGrid').innerHTML=html;
-  document.getElementById('calLegend').innerHTML=(hasCycle()?'<span><i style="background:#9B5C6E"></i>period</span><span><i style="background:#7A3B4A"></i>spotting</span><span><i style="border:1.5px solid #E59DAE;background:transparent"></i>predicted</span>':'')+'<span><i style="background:var(--candle)"></i>symptoms</span>';
+  document.getElementById('calLegend').innerHTML=(hasCycle()?PHASES.map(function(p){return '<span><i style="background:'+p.color+'"></i>'+p.name+'</span>';}).join('')+'<span><i style="background:#B5485F"></i>period</span><span><i style="background:#7A3B4A"></i>spotting</span><span><i style="border:1.5px solid #E59DAE;background:transparent"></i>predicted</span>':'')+'<span><i style="background:var(--candle)"></i>symptoms</span>';
   var st=cycleStats();document.getElementById('calStats').innerHTML='~'+st.len+'-day cycle · ~'+st.plen+'-day period · from '+st.logged+' logged period'+(st.logged!==1?'s':'');
 }
 function calPick(dk){closeCalendar();openCycleLog(dk);}
@@ -1707,7 +1709,7 @@ function renderTend(){
   document.getElementById('suppSub').textContent='Your real schedule'+(cycleInfo().phase.key==='ovulation'?' — histamine layer added for ovulation.':cycleInfo().phase.key==='menstrual'?' — iron + energy emphasis for menstrual.':'.');
   document.getElementById('suppList').innerHTML=sched.map(function(s){
     var d=!!done[s.id];
-    return '<div class="chk'+(d?' done':'')+'" onclick="toggleSupp(\''+s.id+'\')"><div class="box">'+(d?'✓':'')+'</div><div class="ct"><span class="when">'+s.when+'</span>'+s.name+(s.phase?'<span class="tag phase">phase</span>':'')+(s.hist?'<span class="tag hist">histamine</span>':'')+(typeof done[s.id]==='string'?'<span class="tag" style="background:rgba(79,182,140,.18);color:#4FB68C">'+done[s.id]+'</span>':'')+'<span class="nt">'+s.nt+'</span></div></div>';
+    return '<div class="chk'+(d?' done':'')+'" onclick="toggleSupp(\''+s.id+'\')"><div class="box">'+(d?'✓':'')+'</div><div class="ct"><span class="when">'+s.when+'</span>'+s.name+(s.phase?'<span class="tag phase">phase</span>':'')+(s.hist?'<span class="tag hist">histamine</span>':'')+(typeof done[s.id]==='string'?'<input type="time" class="supptime" value="'+suppTo24(done[s.id])+'" onclick="event.stopPropagation()" onchange="setSuppTime(\''+s.id+'\',this.value)" title="tap to edit the time">':'')+'<span class="nt">'+s.nt+'</span></div></div>';
   }).join('');
   document.getElementById('dailyQ').textContent=todaysQ();
   var cs=(S.counts||[]).filter(function(x){return x.date===new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'});});
@@ -1716,6 +1718,9 @@ function renderTend(){
   document.getElementById('ritesList').innerHTML='<div class="tags">'+RITES.map(function(r){var d=!!rdone[r.id];return '<button class="'+(d?'on':'')+'" onclick="toggleRite(\''+r.id+'\')">'+r.t+'</button>';}).join('')+'</div>';
 }
 function toggleSupp(id){var k=todayKey();if(!S.supps[k])S.supps[k]={};if(S.supps[k][id]){delete S.supps[k][id];if(id==='unithroid')delete S.supps[k].unithroidAt;}else{S.supps[k][id]=nowTime();if(id==='unithroid')S.supps[k].unithroidAt=Date.now();}persist();renderTend();renderToday();}
+function suppTo24(s){if(!s)return '';s=String(s).trim();var m=s.match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])?/);if(!m)return '';var h=+m[1],mn=m[2];if(m[3]){var pm=/p/i.test(m[3]);if(h===12)h=pm?12:0;else if(pm)h+=12;}return (h<10?'0'+h:''+h)+':'+mn;}
+function suppFrom24(v){if(!v)return '';var p=v.split(':');var h=+p[0],mn=p[1];var pm=h>=12,h12=h%12;if(h12===0)h12=12;return (h12<10?'0'+h12:''+h12)+':'+mn+' '+(pm?'PM':'AM');}
+function setSuppTime(id,v){var k=todayKey();if(!S.supps[k]||typeof S.supps[k][id]!=='string')return;if(!v)return;S.supps[k][id]=suppFrom24(v);if(id==='unithroid'){var p=v.split(':');var dt=new Date();dt.setHours(+p[0],+p[1],0,0);S.supps[k].unithroidAt=dt.getTime();}persist();}
 function toggleRite(id){var k=riteKey();if(!S.rites[k])S.rites[k]={};S.rites[k][id]=!S.rites[k][id];persist();renderTend();}
 function addCount(){
   var t=document.getElementById('countText').value.trim();if(!t)return;
