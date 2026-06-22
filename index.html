@@ -630,12 +630,12 @@ var FAV_SEED=[
 ];
 var defaults={
   lastPeriodStart:'2026-05-23', cycleLength:29, cycleUpdatedAt:0,
-  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, cycleMode:'C', trackedSyms:null, trackedEvents:null, customEvents:[], drinksLog:{}, drinkTypes:[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}], alchemyLog:{}, substances:[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}], protocol:{active:false,start:null,end:null,days:{}}, symptoms:{}, supps:{}, counts:[], rites:{},
+  hydration:{}, meals:{}, diary:{}, customFoods:[], recipes:[], cycleLog:{}, cycleMode:'C', trackedSyms:null, trackedEvents:null, customEvents:[], usdaKey:'DEMO_KEY', drinksLog:{}, drinkTypes:[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}], alchemyLog:{}, substances:[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}], protocol:{active:false,start:null,end:null,days:{}}, symptoms:{}, supps:{}, counts:[], rites:{},
   favorites:FAV_SEED.slice(), lastSync:0
 };
 var S=Object.assign({},defaults,JSON.parse(localStorage.getItem(EKEY)||'{}'));
 if(!S.favorites||!S.favorites.length)S.favorites=FAV_SEED.slice();
-if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.cycleLog)S.cycleLog={}; if(!S.alchemyLog)S.alchemyLog={}; if(!S.drinksLog)S.drinksLog={}; if(!S.drinkTypes||!S.drinkTypes.length)S.drinkTypes=[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}]; if(!S.substances||!S.substances.length)S.substances=[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}]; if(!S.protocol)S.protocol={active:false,start:null,end:null,days:{}}; if(!S.protocol.days)S.protocol.days={}; Object.keys(S.protocol.days).forEach(function(dk){if(Array.isArray(S.protocol.days[dk])){var o={};S.protocol.days[dk].forEach(function(id){o[id]='';});S.protocol.days[dk]=o;}});
+if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.cycleLog)S.cycleLog={}; if(!S.alchemyLog)S.alchemyLog={}; if(!S.drinksLog)S.drinksLog={}; if(!S.drinkTypes||!S.drinkTypes.length)S.drinkTypes=[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}]; if(!S.substances||!S.substances.length)S.substances=[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}]; if(!S.protocol)S.protocol={active:false,start:null,end:null,days:{}}; if(!S.usdaKey)S.usdaKey='DEMO_KEY'; if(!S.protocol.days)S.protocol.days={}; Object.keys(S.protocol.days).forEach(function(dk){if(Array.isArray(S.protocol.days[dk])){var o={};S.protocol.days[dk].forEach(function(id){o[id]='';});S.protocol.days[dk]=o;}});
 function persist(){try{localStorage.setItem(EKEY,JSON.stringify(S));}catch(e){}}
 
 /* ============ cycle ============ */
@@ -1052,7 +1052,7 @@ function renderDrinks(){
 }
 
 /* ===== MEALS ENGINE ===== */
-var _meal='breakfast', _tab='all', _servCtx=null, _offResults=[], _searchT=null, _recipeDraft=null;
+var _meal='breakfast', _tab='all', _servCtx=null, _offResults=[], _usdaResults=[], _usdaLimited=false, _searchT=null, _recipeDraft=null;
 var _viewDate=null;
 function viewKey(){return _viewDate||todayKey();}
 function shiftDateKey(dk,delta){var d=new Date(dk+'T00:00:00');d.setDate(d.getDate()+delta);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -1124,11 +1124,11 @@ function copyPrevDay(){var dk=viewKey();var prev=shiftDateKey(dk,-1);var yd=S.di
 /* ---- food search sheet ---- */
 function showEl(id){document.getElementById(id).classList.add('open');}
 function hideEl(id){document.getElementById(id).classList.remove('open');}
-function openAddFood(mk){_meal=mk;_tab='all';_offResults=[];document.getElementById('sheetTitle').textContent='Add to '+MEAL_LABEL[mk];document.getElementById('foodSearch').value='';showEl('foodSheet');renderTabs();renderResults('');setTimeout(function(){var i=document.getElementById('foodSearch');if(i)i.focus();},150);}
+function openAddFood(mk){_meal=mk;_tab='all';_offResults=[];_usdaResults=[];_usdaLimited=false;document.getElementById('sheetTitle').textContent='Add to '+MEAL_LABEL[mk];document.getElementById('foodSearch').value='';showEl('foodSheet');renderTabs();renderResults('');setTimeout(function(){var i=document.getElementById('foodSearch');if(i)i.focus();},150);}
 function closeFoodSheet(){hideEl('foodSheet');stopScan();}
 function renderTabs(){var tabs=[['all','All'],['recent','Recent'],['frequent','Frequent'],['myfoods','My Foods'],['recipes','Saved meals']];document.getElementById('searchTabs').innerHTML=tabs.map(function(t){return '<button class="'+(_tab===t[0]?'on':'')+'" onclick="setTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');}
 function setTab(t){_tab=t;renderTabs();renderResults(document.getElementById('foodSearch').value.trim());}
-function onSearchInput(){var q=document.getElementById('foodSearch').value.trim();renderResults(q);if(_searchT)clearTimeout(_searchT);if(q.length>=2&&navigator.onLine){_searchT=setTimeout(function(){offSearch(q);},650);}}
+function onSearchInput(){var q=document.getElementById('foodSearch').value.trim();renderResults(q);if(_searchT)clearTimeout(_searchT);if(q.length>=2&&navigator.onLine){_searchT=setTimeout(function(){usdaSearch(q);offSearch(q);},500);}}
 function frow(name,meta,kcal,onclick){return '<div class="frow" onclick="'+onclick+'"><div class="fi"><div class="fn">'+name+'</div>'+(meta?'<div class="fm">'+meta+'</div>':'')+'</div><div class="fk">'+(kcal!=null?Math.round(kcal)+' cal':'')+'</div></div>';}
 function entryHistory(){var out=[];Object.keys(S.diary).sort().reverse().forEach(function(dk){flatDay(dk).forEach(function(e){if(e.fid||e.rid)out.push(e);});});return out;}
 function recentFoods(){var seen={},out=[];entryHistory().forEach(function(e){var key=e.rid?('r'+e.rid):e.fid;if(key&&!seen[key]){seen[key]=1;out.push(e);}});return out.slice(0,30);}
@@ -1151,7 +1151,9 @@ function renderResults(q){
   foods.sort(function(a,b){return (a.n.toLowerCase().indexOf(q))-(b.n.toLowerCase().indexOf(q));});
   html=recs.map(recipeRowHtml).join('')+foods.slice(0,40).map(foodRowHtml).join('');
   if(!recs.length&&!foods.length)html='<div class="loadmsg">No local match. '+(navigator.onLine?'Searching Open Food Facts…':'Offline — create a custom food below.')+'</div>';
-  html+='<div class="fsrc">Create</div>'+frow('＋ Create custom food','','', 'openCreate(\'food\')')+frow('＋ Create recipe / saved meal','','', 'openCreate(\'recipe\')');
+  html+='<div class="fsrc">Create &amp; setup</div>'+frow('＋ Create custom food','','', 'openCreate(\'food\')')+frow('＋ Create recipe / saved meal','','', 'openCreate(\'recipe\')')+frow('🔑 Set up brand search (free USDA key)','better US brand results · 30 sec','', 'setUsdaKey()');
+  if(_usdaResults.length){html+='<div class="fsrc">From USDA · US brands + generic</div>'+_usdaResults.map(function(f,i){var base=nutrFromV(f.v,f.serv[0][1]);return frow((f.br?f.br+' ':'')+f.n,f.serv[0][0]+' · '+Math.round(base.p)+'p',base.kcal,'pickUsda('+i+')');}).join('');}
+  if(navigator.onLine&&_usdaLimited){html+='<div class="note" style="color:var(--ember)">USDA brand search hit the free-demo limit — <span style="text-decoration:underline;cursor:pointer" onclick="setUsdaKey()">add your free key</span> (30 sec) for full search.</div>';}
   if(_offResults.length){html+='<div class="fsrc">From Open Food Facts</div>'+_offResults.map(function(f,i){var base=nutrFromV(f.v,f.serv[0][1]);return frow((f.br?f.br+' ':'')+f.n,f.serv[0][0]+' · '+Math.round(base.p)+'p',base.kcal,'pickOff('+i+')');}).join('');}
   host.innerHTML=html;
 }
@@ -1162,6 +1164,19 @@ function num(x){var n=parseFloat(x);return isNaN(n)?0:n;}
 function mapOFF(prod){var nu=prod.nutriments||{};var v=[num(nu['proteins_100g']),num(nu['carbohydrates_100g']),num(nu['fat_100g']),num(nu['fiber_100g']),num(nu['sugars_100g']),Math.round((num(nu['sodium_100g'])||num(nu['salt_100g'])/2.5)*1000),Math.round(num(nu['potassium_100g'])*1000),r1(num(nu['iron_100g'])*1000),Math.round(num(nu['magnesium_100g'])*1000)];var g=num(prod.serving_quantity)||100;var sl=prod.serving_size||(g+' g');var nm=prod.product_name||'Unknown food';var x={se:Math.round(num(nu['selenium_100g'])*1e6),zn:r1(num(nu['zinc_100g'])*1000),io:Math.round(num(nu['iodine_100g'])*1e6),ca:Math.round(num(nu['calcium_100g'])*1000)};var h=classifyHistamine(nm+' '+(prod.brands||'')+' '+(prod.categories||'')+' '+(prod.ingredients_text||''));return {id:'off_'+(prod.code||nm),n:nm,br:(prod.brands||'').split(',')[0],a:[],serv:[[sl,g],['100 g',100]],v:v,x:x,h:h,src:'off'};}
 function offSearch(q){var host=document.getElementById('searchResults');var url='https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=20&fields=code,product_name,brands,categories,ingredients_text,nutriments,serving_size,serving_quantity';fetch(url).then(function(r){return r.json();}).then(function(j){_offResults=(j.products||[]).filter(function(p){return p.product_name&&p.nutriments&&p.nutriments['proteins_100g']!=null;}).map(mapOFF).slice(0,20);renderResults(document.getElementById('foodSearch').value.trim());}).catch(function(){});}
 function pickOff(i){var f=_offResults[i];if(!f)return;if(!foodById(f.id)){S.customFoods.push(f);persist();}openServFood(f.id);}
+function titleCase(s){return String(s||'').toLowerCase().replace(/\b\w/g,function(c){return c.toUpperCase();});}
+function mapUSDA(f){var nut={};(f.foodNutrients||[]).forEach(function(n){if(n.nutrientNumber!=null)nut[n.nutrientNumber]=n.value;});function gn(k){return num(nut[k]);}
+  var v=[gn('203'),gn('205'),gn('204'),gn('291'),gn('269'),Math.round(gn('307')),Math.round(gn('306')),r1(gn('303')),Math.round(gn('304'))];
+  var x={se:Math.round(gn('317')),zn:r1(gn('309')),io:0,ca:Math.round(gn('301'))};
+  var unit=(f.servingSizeUnit||'').toUpperCase();
+  var sg=((unit==='GRM'||unit==='G'||unit==='MLT'||unit==='ML')&&f.servingSize)?f.servingSize:100;
+  var servLabel=f.householdServingFullText||(f.servingSize?(f.servingSize+' '+(f.servingSizeUnit||'g').toLowerCase()):'100 g');
+  var nm=titleCase(f.description||'food'),br=titleCase(f.brandOwner||f.brandName||'');
+  return {id:'usda_'+f.fdcId,n:nm,br:br,a:[],serv:[[servLabel,sg||100],['100 g',100]],v:v,x:x,h:classifyHistamine((f.description||'')+' '+br),src:'usda'};}
+function usdaSearch(q){var key=S.usdaKey||'DEMO_KEY';var url='https://api.nal.usda.gov/fdc/v1/foods/search?api_key='+key+'&query='+encodeURIComponent(q)+'&pageSize=25&dataType=Branded&dataType=Foundation&dataType=SR%20Legacy';
+  fetch(url).then(function(r){if(r.status===429||r.status===403){_usdaLimited=true;return null;}return r.json();}).then(function(j){if(!j){renderResults(document.getElementById('foodSearch').value.trim());return;}_usdaLimited=false;_usdaResults=(j.foods||[]).filter(function(f){return f.foodNutrients&&f.foodNutrients.length&&num((f.foodNutrients.filter(function(n){return n.nutrientNumber==='208';})[0]||{}).value)>0;}).map(mapUSDA).slice(0,25);renderResults(document.getElementById('foodSearch').value.trim());}).catch(function(){});}
+function pickUsda(i){var f=_usdaResults[i];if(!f)return;if(!foodById(f.id)){S.customFoods.push(f);persist();}openServFood(f.id);}
+function setUsdaKey(){var k=prompt('Paste your free USDA FoodData Central API key for full brand search.\n\nGet one instantly (free, ~30 sec) at:\nfdc.nal.usda.gov/api-key-signup\n\nLeave blank to use the limited demo.');if(k!=null){S.usdaKey=k.trim()||'DEMO_KEY';persist();flash(k.trim()?'Search key saved.':'Using demo key.');var q=document.getElementById('foodSearch');if(q&&q.value.trim())usdaSearch(q.value.trim());}}
 function lookupBarcode(code){flash('Looking up…');fetch('https://world.openfoodfacts.org/api/v0/product/'+encodeURIComponent(code)+'.json').then(function(r){return r.json();}).then(function(j){if(j.status===1&&j.product){var f=mapOFF(j.product);f.id='off_'+code;if(!foodById(f.id)){S.customFoods.push(f);persist();}if(!document.getElementById('foodSheet').classList.contains('open'))showEl('foodSheet');openServFood(f.id);}else{flash('Not found. Search by name.');}}).catch(function(){flash('Lookup failed.');});}
 
 /* ---- serving picker ---- */
@@ -1635,7 +1650,7 @@ function addCount(){
 function syncPayload(){
   return {_ember:true,version:1,exportedAt:new Date().toISOString(),
     lastPeriodStart:S.lastPeriodStart,cycleLength:S.cycleLength,cycleUpdatedAt:S.cycleUpdatedAt,
-    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,cycleLog:S.cycleLog,trackedSyms:S.trackedSyms,trackedEvents:S.trackedEvents,customEvents:S.customEvents,drinksLog:S.drinksLog,drinkTypes:S.drinkTypes,alchemyLog:S.alchemyLog,substances:S.substances,protocol:S.protocol,symptoms:S.symptoms,supps:S.supps,
+    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,cycleLog:S.cycleLog,trackedSyms:S.trackedSyms,trackedEvents:S.trackedEvents,customEvents:S.customEvents,usdaKey:S.usdaKey,drinksLog:S.drinksLog,drinkTypes:S.drinkTypes,alchemyLog:S.alchemyLog,substances:S.substances,protocol:S.protocol,symptoms:S.symptoms,supps:S.supps,
     counts:S.counts,rites:S.rites,favorites:S.favorites};
 }
 function syncBlob(){return new Blob([JSON.stringify(syncPayload(),null,0)],{type:'application/json'});}
