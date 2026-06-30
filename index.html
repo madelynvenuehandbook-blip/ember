@@ -301,7 +301,13 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
     <div class="pagetitle">Today</div>
     <div class="getbetter" id="betterLine"></div>
 
-    <div class="card" id="todayCheckinCard" onclick="openCycleLog(todayKey())" style="cursor:pointer;border-color:rgba(232,185,106,.4)">
+    <div class="datestrip">
+      <button class="dnav" onclick="dayNav(-1)">‹</button>
+      <div class="dlabel" onclick="dayToday()"><div class="dl1"><span id="tdDLabel">Today</span> <span style="color:var(--muted);font-size:14px">▾</span></div><div class="dl2" id="tdDSub"></div></div>
+      <button class="dnav" id="tdDNext" onclick="dayNav(1)">›</button>
+    </div>
+
+    <div class="card" id="todayCheckinCard" onclick="openCycleLog(viewKey())" style="cursor:pointer;border-color:rgba(232,185,106,.4)">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:14px">
         <div><h3 style="margin:0">Daily Check-In</h3><div class="sub" style="margin:3px 0 0" id="todayCheckinSub">tap to check in</div></div>
         <div id="todayFlame" style="text-align:center;flex:0 0 auto"></div>
@@ -359,6 +365,11 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
   <div class="page" id="pg-water">
     <div class="eyebrow">Hold your volume</div>
     <div class="pagetitle">Water</div>
+    <div class="datestrip">
+      <button class="dnav" onclick="dayNav(-1)">‹</button>
+      <div class="dlabel" onclick="dayToday()"><div class="dl1"><span id="wtDLabel">Today</span> <span style="color:var(--muted);font-size:14px">▾</span></div><div class="dl2" id="wtDSub"></div></div>
+      <button class="dnav" id="wtDNext" onclick="dayNav(1)">›</button>
+    </div>
     <div class="card">
       <div class="ring-wrap" id="waterRing"></div>
       <div class="wq">
@@ -436,12 +447,17 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       <div><div class="eyebrow" id="cycEyebrow">Your body, tracked</div><div class="pagetitle" id="cycTitle">Cycle</div></div>
       <button class="ghost" style="margin-top:10px;padding:10px 14px;font-size:18px" onclick="openCycleSettings()">⚙</button>
     </div>
+    <div class="datestrip">
+      <button class="dnav" onclick="dayNav(-1)">‹</button>
+      <div class="dlabel" onclick="dayToday()"><div class="dl1"><span id="cyDLabel">Today</span> <span style="color:var(--muted);font-size:14px">▾</span></div><div class="dl2" id="cyDSub"></div></div>
+      <button class="dnav" id="cyDNext" onclick="dayNav(1)">›</button>
+    </div>
     <div class="card" id="cycRingCard">
       <div class="ring-wrap" id="cycleRingBox"></div>
       <div style="text-align:center"><div class="sub" style="margin:0" id="cyclePhaseLine"></div><div id="cycleNext" class="note" style="margin-top:4px"></div></div>
     </div>
     <div class="toolrow">
-      <button class="act" onclick="openCycleLog(todayKey())">＋ Daily check-in</button>
+      <button class="act" onclick="openCycleLog(viewKey())">＋ Daily check-in</button>
       <button class="ghost" onclick="openCalendar()">📅 Calendar</button>
       <button class="ghost" onclick="openCycleInsights()">📊 Patterns</button>
     </div>
@@ -660,16 +676,8 @@ var PHASES=[
  {key:'luteal',name:'Luteal',moon:'Waning Moon',color:'#B98A6A',start:17,end:99}
 ];
 function phaseForDay(d){return PHASES.find(function(p){return d>=p.start&&d<=p.end;})||PHASES[3];}
-function cycleInfo(){
-  var len=S.cycleLength||29;
-  var start=new Date(S.lastPeriodStart+'T00:00:00');
-  var today=new Date();today.setHours(0,0,0,0);
-  var diff=Math.floor((today-start)/86400000);
-  var day=((diff%len)+len)%len+1;
-  var ph=phaseForDay(day);
-  var lateLuteal=(ph.key==='luteal' && day>=len-4);
-  return {len:len,day:day,phase:ph,lateLuteal:lateLuteal};
-}
+function cycleInfoForDate(dk){var len=S.cycleLength||29;var day=dayNumFor(dk);var ph=phaseForDay(day);return {len:len,day:day,phase:ph,lateLuteal:(ph.key==='luteal'&&day>=len-4)};}
+function cycleInfo(){return cycleInfoForDate(todayKey());}
 
 /* phase-specific guidance, built to YOUR body + foods (no gluten, no poultry, fish=cod/tuna, no broccoli) */
 var GUIDE={
@@ -985,8 +993,15 @@ function flatDay(dk){var d=S.diary[dk];if(!d)return [];return d.breakfast.concat
 function dayMeals(){return flatDay(todayKey());}
 function blankTot(){return {kcal:0,p:0,c:0,f:0,fib:0,sug:0,sod:0,pot:0,iron:0,mag:0,se:0,zn:0,io:0,ca:0};}
 function sumEntries(list){var t=blankTot();list.forEach(function(m){t.kcal+=m.kcal||0;t.p+=m.p||0;t.c+=m.c||0;t.f+=m.f||0;t.fib+=m.fib||0;t.sug+=m.sug||0;t.sod+=m.sod||0;t.pot+=m.pot||0;t.iron+=m.iron||0;t.mag+=m.mag||0;t.se+=m.se||0;t.zn+=m.zn||0;t.io+=m.io||0;t.ca+=m.ca||0;});return t;}
-function macroTotals(){return sumEntries(flatDay(todayKey()));}
+function macroTotals(){return sumEntries(flatDay(viewKey()));}
+function macroTotalsFor(dk){return sumEntries(flatDay(dk));}
 function todayWater(){return (S.hydration[todayKey()]||{ml:0,lyte:0});}
+function waterFor(dk){return (S.hydration[dk]||{ml:0,lyte:0});}
+function flameForDate(dk){if(dk===todayKey())return flameForToday();var sc=stabilityScore(dk);return {sc:sc,mode:sc!=null?'day':'none'};}
+/* shared day navigation for Today / Water / Cycle (and Meals) — capped at today */
+function dayNav(delta){var nk=shiftDateKey(viewKey(),delta);if(delta>0&&nk>todayKey())return;_viewDate=(nk===todayKey()?null:nk);renderAll();}
+function dayToday(){_viewDate=null;renderAll();}
+function fillDayStrip(labelId,subId,nextId){var vk=viewKey();var el=document.getElementById(labelId);if(el)el.textContent=dateLabel(vk);var s=document.getElementById(subId);if(s)s.textContent=dateSub(vk)+(hasCycle()?' · day '+dayNumFor(vk)+' · '+phaseForDay(dayNumFor(vk)).name:'');var nx=document.getElementById(nextId);if(nx)nx.style.visibility=(vk===todayKey()?'hidden':'visible');}
 
 function renderHeader(){
   var ci=cycleInfo();
@@ -997,8 +1012,10 @@ function renderHeader(){
 }
 
 function renderToday(){
-  var ci=cycleInfo(),tg=targets(),tot=macroTotals(),w=todayWater(),wg=waterGoal();
-  document.getElementById('betterLine').textContent=todaysQuote();var _ff=flameForToday(),_fl=flameLabel(_ff.sc),_tf=document.getElementById('todayFlame');if(_tf)_tf.innerHTML=(_ff.sc!=null?'<div style="font-family:var(--temple);font-size:30px;color:'+_fl[1]+';line-height:1">'+_ff.sc+'</div><div class="tiny" style="color:'+_fl[1]+'">'+_fl[0]+'</div>':'<div style="font-size:28px;color:var(--candle)">›</div>');var _tcs=document.getElementById('todayCheckinSub');if(_tcs)_tcs.textContent=(_ff.mode==='today'?'your flame today · tap to update':(_ff.mode==='morning'?'this morning · from yesterday + your sleep · pace today':'tap to check in — sleep, symptoms, exertion'));
+  var vk=viewKey(),isTd=(vk===todayKey());
+  var ci=cycleInfoForDate(vk),tg=targetsFor(phaseKeyForDate(vk)),tot=macroTotalsFor(vk),w=waterFor(vk),wg=waterGoalForPhase(phaseKeyForDate(vk));
+  fillDayStrip('tdDLabel','tdDSub','tdDNext');
+  document.getElementById('betterLine').textContent=todaysQuote();var _ff=flameForDate(vk),_fl=flameLabel(_ff.sc),_tf=document.getElementById('todayFlame');if(_tf)_tf.innerHTML=(_ff.sc!=null?'<div style="font-family:var(--temple);font-size:30px;color:'+_fl[1]+';line-height:1">'+_ff.sc+'</div><div class="tiny" style="color:'+_fl[1]+'">'+_fl[0]+'</div>':'<div style="font-size:28px;color:var(--candle)">›</div>');var _tcs=document.getElementById('todayCheckinSub');if(_tcs)_tcs.textContent=(!isTd?(_ff.sc!=null?'your Ember for '+dateSub(vk)+' · tap to view/edit':'no check-in for '+dateSub(vk)+' · tap to add'):(_ff.mode==='today'?'your flame today · tap to update':(_ff.mode==='morning'?'this morning · from your sleep + symptoms · tap to add more':(_ff.mode==='yesterday'?'yesterday’s reading · check in to update today':'tap to check in — sleep, symptoms, exertion'))));
   document.getElementById('todayWaterRing').innerHTML=ring(w.ml/wg,(w.ml/1000).toFixed(1)+'L','water',(wg/1000).toFixed(1)+'L goal','#5FA8D3',156);
   document.getElementById('todayProteinRing').innerHTML=ring(tot.p/tg.p,Math.round(tot.p),'protein',tg.p+'g goal','#4FB68C',156);
   document.getElementById('todayMacroMini').innerHTML=
@@ -1007,16 +1024,21 @@ function renderToday(){
   var g=GUIDE[ci.phase.key];
   document.getElementById('tpTitle').textContent='Day '+ci.day+' · '+ci.phase.name+(ci.lateLuteal?' (late)':'');
   document.getElementById('tpSub').textContent=ci.phase.moon+' energy';
-  document.getElementById('tpOne').innerHTML='<div class="gitem flag"><div class="gi">✦</div><div><div class="gl">Today\'s truth</div><div class="gt">'+g.flag+'</div></div></div>';
-  // anchors: water gap, protein gap, key supps undone
+  document.getElementById('tpOne').innerHTML='<div class="gitem flag"><div class="gi">✦</div><div><div class="gl">'+(isTd?'Today\'s truth':'Phase truth')+'</div><div class="gt">'+g.flag+'</div></div></div>';
   var an=[];
-  if(w.ml<wg)an.push('💧 '+Math.round((wg-w.ml)/250)+' more cups of water to hit your goal'+(ci.phase.key==='ovulation'||ci.phase.key==='menstrual'?' — raised for this phase':''));
-  if(tot.p<tg.p)an.push('🥩 '+Math.round(tg.p-tot.p)+'g protein still to go today');
-  if((w.lyte||0)<2&&(ci.phase.key==='ovulation'||ci.phase.key==='menstrual'))an.push('🧂 load electrolytes heavier today (your high-autonomic phase)');
-  var supDone=S.supps[todayKey()]||{};
-  if(!supDone.unithroid)an.push('💊 Unithroid on an empty stomach');
-  if(!supDone.mag)an.push('🌙 magnesium malate this evening');
-  if(!an.length)an.push('You\'re on top of today. That counts — bank it.');
+  if(isTd){
+    if(w.ml<wg)an.push('💧 '+Math.round((wg-w.ml)/250)+' more cups of water to hit your goal'+(ci.phase.key==='ovulation'||ci.phase.key==='menstrual'?' — raised for this phase':''));
+    if(tot.p<tg.p)an.push('🥩 '+Math.round(tg.p-tot.p)+'g protein still to go today');
+    if((w.lyte||0)<2&&(ci.phase.key==='ovulation'||ci.phase.key==='menstrual'))an.push('🧂 load electrolytes heavier today (your high-autonomic phase)');
+    var supDone=S.supps[todayKey()]||{};
+    if(!supDone.unithroid)an.push('💊 Unithroid on an empty stomach');
+    if(!supDone.mag)an.push('🌙 magnesium malate this evening');
+    if(!an.length)an.push('You\'re on top of today. That counts — bank it.');
+  }else{
+    an.push('💧 '+(w.ml/1000).toFixed(1)+'L water · '+(w.lyte||0)+' electrolyte serving'+((w.lyte||0)===1?'':'s'));
+    an.push('🍽 '+Math.round(tot.kcal)+' cal · '+Math.round(tot.p)+'g protein logged');
+    an.push('↩︎ Reviewing '+dateSub(vk)+' — tap the date above to return to today.');
+  }
   document.getElementById('todayAnchors').innerHTML=an.map(function(x){return '<div class="logrow">'+x+'</div>';}).join('');
   document.getElementById('lastSync').textContent=S.lastSync?('Last carried home: '+new Date(S.lastSync).toLocaleString()):'Not carried home yet.';
   renderWeight();
@@ -1049,33 +1071,35 @@ function renderPatterns(){
   host.innerHTML=h;
 }
 function renderWater(){
-  var w=todayWater(),wg=waterGoal(),ci=cycleInfo();
+  var vk=viewKey(),isTd=(vk===todayKey()),w=waterFor(vk),phk=phaseKeyForDate(vk),wg=waterGoalForPhase(phk);
+  fillDayStrip('wtDLabel','wtDSub','wtDNext');
   document.getElementById('waterRing').innerHTML=ring(w.ml/wg,(w.ml/1000).toFixed(2)+'L',(Math.round(w.ml/wg*100))+'%',(wg/1000).toFixed(1)+'L goal','#5FA8D3',176);
   var why='Toward your 2.5–3L POTS target.';
-  if(ci.phase.key==='ovulation')why='Raised to '+(wg/1000).toFixed(1)+'L — ovulation is your highest resting-HR, lowest-stability window. Push fluids + salt hardest now.';
-  else if(ci.phase.key==='menstrual')why='Raised to '+(wg/1000).toFixed(1)+'L — menstrual worsens your POTS. Heavy fluids + electrolytes.';
+  if(phk==='ovulation')why='Raised to '+(wg/1000).toFixed(1)+'L — ovulation is your highest resting-HR, lowest-stability window. Push fluids + salt hardest now.';
+  else if(phk==='menstrual')why='Raised to '+(wg/1000).toFixed(1)+'L — menstrual worsens your POTS. Heavy fluids + electrolytes.';
+  if(!isTd)why='Reviewing '+dateSub(vk)+' — tap +/− to adjust this day if you need to.';
   document.getElementById('waterWhy').textContent=why;
   document.getElementById('lyteCount').textContent=w.lyte||0;
-  document.getElementById('lyteWhy').textContent=(ci.phase.key==='ovulation'||ci.phase.key==='menstrual')?'Load heavier today — this is a high-autonomic phase. Buoy in juice 2–3x, fasting salts on hard days.':'Buoy in juice through the day keeps your volume up.';
+  document.getElementById('lyteWhy').textContent=(phk==='ovulation'||phk==='menstrual')?'Load heavier — this is a high-autonomic phase. Buoy in juice 2–3x, fasting salts on hard days.':'Buoy in juice through the day keeps your volume up.';
 }
-function addWater(ml){var k=todayKey();var w=S.hydration[k]||{ml:0,lyte:0};if(!w.log)w.log=[];if(ml>0)w.log.push(ml);w.ml=Math.max(0,w.ml+ml);w.goal=waterGoal();S.hydration[k]=w;persist();renderWater();renderToday();}
-function undoLastInput(){var k=todayKey();var w=S.hydration[k];if(!w||!w.log||!w.log.length){flash('Nothing to undo.');return;}var last=w.log.pop();w.ml=Math.max(0,w.ml-last);persist();renderWater();renderToday();flash('Undid last input (-'+last+' ml).');}
+function addWater(ml){var k=viewKey();var w=S.hydration[k]||{ml:0,lyte:0};if(!w.log)w.log=[];if(ml>0)w.log.push(ml);w.ml=Math.max(0,w.ml+ml);w.goal=waterGoalForPhase(phaseKeyForDate(k));S.hydration[k]=w;persist();renderWater();renderToday();}
+function undoLastInput(){var k=viewKey();var w=S.hydration[k];if(!w||!w.log||!w.log.length){flash('Nothing to undo.');return;}var last=w.log.pop();w.ml=Math.max(0,w.ml-last);persist();renderWater();renderToday();flash('Undid last input (-'+last+' ml).');}
 function addCustomWater(){var v=prompt('How many ml?');if(v&&!isNaN(v))addWater(parseInt(v,10));}
-function addLyte(n){var k=todayKey();var w=S.hydration[k]||{ml:0,lyte:0};w.lyte=Math.max(0,(w.lyte||0)+n);S.hydration[k]=w;persist();renderWater();renderToday();}
+function addLyte(n){var k=viewKey();var w=S.hydration[k]||{ml:0,lyte:0};w.lyte=Math.max(0,(w.lyte||0)+n);S.hydration[k]=w;persist();renderWater();renderToday();}
 /* ===== DRINKS (beverages, not food) ===== */
 function drinksDay(dk){if(!S.drinksLog[dk])S.drinksLog[dk]=[];return S.drinksLog[dk];}
-function logDrink(id){var t=(S.drinkTypes||[]).filter(function(x){return x.id===id;})[0];if(!t)return;drinksDay(todayKey()).push({id:t.id,name:t.name,emoji:t.emoji,caf:t.caf||0,t:nowTime()});persist();renderDrinks();}
-function removeDrink(i){drinksDay(todayKey()).splice(i,1);persist();renderDrinks();}
+function logDrink(id){var t=(S.drinkTypes||[]).filter(function(x){return x.id===id;})[0];if(!t)return;drinksDay(viewKey()).push({id:t.id,name:t.name,emoji:t.emoji,caf:t.caf||0,t:nowTime()});persist();renderDrinks();}
+function removeDrink(i){drinksDay(viewKey()).splice(i,1);persist();renderDrinks();}
 function dayCaffeine(dk){return (S.drinksLog[dk]||[]).reduce(function(a,d){return a+(d.caf||0);},0);}
 var CAFF_NOTE={menstrual:'Ease off — caffeine is a vasoconstrictor + worsens cramps.',follicular:'Full caffeine is fine — you metabolize it fastest now.',ovulation:'⚠ Half-caf or matcha — your resting HR runs high this week.',luteal:'Taper late luteal — protects blood sugar + magnesium.'};
 function addCustomDrink(){var nm=prompt('Drink name?');if(!nm)return;var caf=prompt('Caffeine mg per serving? (0 if none)','0');S.drinkTypes.push({id:'d_'+Date.now(),name:nm,emoji:'🥤',caf:parseInt(caf,10)||0});persist();renderDrinks();}
 function renderDrinks(){
   var host=document.getElementById('drinkChips');if(!host)return;
   host.innerHTML=(S.drinkTypes||[]).map(function(t){return '<span class="chip" onclick="logDrink(\''+t.id+'\')">'+(t.emoji||'🥤')+' '+t.name+(t.caf?' <span class="cm" style="display:inline;color:var(--muted)">'+t.caf+'mg</span>':'')+'</span>';}).join('');
-  var list=drinksDay(todayKey());
+  var vk=viewKey(),list=drinksDay(vk);
   document.getElementById('drinkLog').innerHTML=list.length?list.map(function(d,i){return '<div class="logrow"><div>'+(d.emoji||'')+' '+d.name+'<span class="macros">'+(d.caf?d.caf+'mg caffeine · ':'')+(d.t||'')+'</span></div><div class="x" onclick="removeDrink('+i+')">×</div></div>';}).join(''):'<div class="note">Tap a drink to log it.</div>';
-  var caf=dayCaffeine(todayKey()),note=hasCycle()?(CAFF_NOTE[cycleInfo().phase.key]||''):'';
-  document.getElementById('caffLine').innerHTML='Caffeine today: <b style="color:var(--candle)">'+caf+' mg</b>'+(note?' · '+note:'');
+  var caf=dayCaffeine(vk),note=hasCycle()?(CAFF_NOTE[phaseForDay(dayNumFor(vk)).key]||''):'';
+  document.getElementById('caffLine').innerHTML='Caffeine '+(vk===todayKey()?'today':dateSub(vk))+': <b style="color:var(--candle)">'+caf+' mg</b>'+(note?' · '+note:'');
 }
 
 /* ===== MEALS ENGINE ===== */
@@ -1502,20 +1526,22 @@ function renderCycle(){
     document.getElementById('cycleScience').textContent='Log your symptoms daily — POTS, autoimmune, mood, sleep, energy, pain — and watch your patterns build on the calendar and in Patterns. Everything here helps you understand and support your body.';
     return;
   }
-  var ci=cycleInfo(),st=cycleStats(),mp=moonPhase(todayKey());
+  var vk=viewKey(),isTd=(vk===todayKey());fillDayStrip('cyDLabel','cyDSub','cyDNext');
+  var ci=cycleInfoForDate(vk),st=cycleStats(),mp=moonPhase(vk);
   document.getElementById('cycleRingBox').innerHTML=cycleRingSVG(ci);
   document.getElementById('cyclePhaseLine').textContent=ci.phase.name+' · day '+ci.day+' · '+mp.emoji+' '+mp.name+' Moon';
   var dtp=nextPeriodInDays(),nextHtml;
-  if(isMeno()){nextHtml=(st.logged>=2?'~'+st.len+'-day cycle (loose) · this stage is about symptom insight':'Perimenopause / menopause — tracking your symptoms + where your body is at');}
+  if(!isTd){nextHtml=isPeriodDay(vk)?'On your period · day '+periodDayNumFor(vk)+' · reviewing '+dateSub(vk):'Day '+ci.day+' · '+ci.phase.name+' · reviewing '+dateSub(vk);}
+  else if(isMeno()){nextHtml=(st.logged>=2?'~'+st.len+'-day cycle (loose) · this stage is about symptom insight':'Perimenopause / menopause — tracking your symptoms + where your body is at');}
   else{nextHtml=isPeriodDay(todayKey())?'On your period · day '+periodDayNum():(dtp>0?'Next period in ~<b style="color:#E59DAE">'+dtp+'</b> day'+(dtp>1?'s':'')+' · ~'+st.len+'-day cycle':(dtp===0?'Period likely today':'~'+(-dtp)+' day'+(-dtp!==1?'s':'')+' past your average'));}
   document.getElementById('cycleNext').innerHTML=nextHtml;
   var fh='';
-  if(showFert()){var fw=fertileWindow(),inWin=ci.day>=fw.start&&ci.day<=fw.end;
-    if(fertConception()){fh='<div class="card" style="border-left:2px solid #6FA88C"><h3>Fertile window</h3><div class="note" style="margin:0">Estimated ovulation ~day '+fw.ov+'; fertile window ~days '+fw.start+'–'+fw.end+'.'+(inWin?' <b style="color:#6FA88C">You’re in it now.</b>':'')+'</div></div>';}
-    else{fh='<div class="card" style="border-left:2px solid #E8B96A"><h3>Estrogen-peak window</h3><div class="note" style="margin:0">~Days '+fw.start+'–'+fw.end+' (around day '+fw.ov+'): estrogen + testosterone peak — your highest energy, libido, magnetism, glowing skin.'+(inWin?' <b style="color:#E8B96A">You’re in it now.</b>':'')+' Pure biology, no baby talk.</div></div>';}
+  if(showFert()){var fw=fertileWindow(),inWin=ci.day>=fw.start&&ci.day<=fw.end,inTxt=isTd?'You’re in it now.':'This day was in it.';
+    if(fertConception()){fh='<div class="card" style="border-left:2px solid #6FA88C"><h3>Fertile window</h3><div class="note" style="margin:0">Estimated ovulation ~day '+fw.ov+'; fertile window ~days '+fw.start+'–'+fw.end+'.'+(inWin?' <b style="color:#6FA88C">'+inTxt+'</b>':'')+'</div></div>';}
+    else{fh='<div class="card" style="border-left:2px solid #E8B96A"><h3>Estrogen-peak window</h3><div class="note" style="margin:0">~Days '+fw.start+'–'+fw.end+' (around day '+fw.ov+'): estrogen + testosterone peak — your highest energy, libido, magnetism, glowing skin.'+(inWin?' <b style="color:#E8B96A">'+inTxt+'</b>':'')+' Pure biology, no baby talk.</div></div>';}
   }
   document.getElementById('cycleFert').innerHTML=fh;
-  var hu=cycleHeadsUp();
+  var hu=isTd?cycleHeadsUp():[];
   document.getElementById('cycleHeadsUp').innerHTML=hu.map(function(h){return '<div class="card" style="border-left:2px solid var(--ember);background:rgba(224,116,60,.06)"><div style="display:flex;gap:11px"><div style="font-size:20px">'+h.i+'</div><div><div style="font-family:var(--temple);letter-spacing:.05em;color:var(--moon);font-size:15px">'+h.t+'</div><div class="note" style="margin-top:3px">'+h.d+'</div></div></div></div>';}).join('');
   document.getElementById('cycBodyH').textContent='Your body right now';
   document.getElementById('cycleBodySub').textContent=ci.phase.name+' · '+ci.phase.moon;
@@ -1523,7 +1549,8 @@ function renderCycle(){
   var g=GUIDE[ci.phase.key];var rows=[{i:'🍽',l:'Eat',t:g.eat},{i:'🏋️',l:'Move',t:g.move},{i:'☕',l:'Caffeine',t:g.caf},{i:'✨',l:'Skin',t:g.skin},{i:'💊',l:'Supplements',t:g.supp}];
   document.getElementById('phaseGuide').innerHTML=rows.map(function(r){return '<div class="gitem"><div class="gi">'+r.i+'</div><div><div class="gl">'+r.l+'</div><div class="gt">'+r.t+'</div></div></div>';}).join('');
 }
-function periodDayNum(){var runs=periodRuns(),t=todayKey();for(var i=0;i<runs.length;i++){var r=runs[i],d=daysBetween(r.start,t);if(d>=0&&d<r.len+2)return d+1;}return 1;}
+function periodDayNumFor(t){var runs=periodRuns();for(var i=0;i<runs.length;i++){var r=runs[i],d=daysBetween(r.start,t);if(d>=0&&d<r.len+2)return d+1;}return 1;}
+function periodDayNum(){return periodDayNumFor(todayKey());}
 
 /* ---- daily cycle log ---- */
 var _logDate=null;
@@ -1538,7 +1565,7 @@ function renderCycleLog(){
   if(!cl.exertion)cl.exertion={};if(!cl.events)cl.events=[];if(!cl.sleep)cl.sleep={};if(!cl.mood)cl.mood=[];if(!cl.sex)cl.sex=[];
   var h='<div class="datestrip"><button class="dnav" onclick="logShift(-1)">‹</button><div class="dlabel"><div class="dl1">'+dateLabel(dk)+'</div><div class="dl2">'+dateSub(dk)+(hasCycle()?' · day '+dayNumFor(dk)+' · '+phaseForDay(dayNumFor(dk)).name:'')+'</div></div><button class="dnav" onclick="logShift(1)">›</button></div>';
   var sc=stabilityScore(dk),fl=flameLabel(sc);
-  if(sc!=null)h+='<div class="card" style="margin:0 0 12px;text-align:center"><div class="tiny muted">Your flame today · from how your body is (HRV later)</div><div style="font-family:var(--temple);font-size:34px;color:'+fl[1]+';line-height:1.1">'+sc+'</div><div style="color:'+fl[1]+'">'+fl[0]+'</div></div>';
+  if(sc!=null){var _ef=emberFactors(dk);h+='<div class="card" style="margin:0 0 12px;text-align:center"><div class="tiny muted">Your Ember today · sleep + symptoms (HRV + resting HR later)</div><div style="font-family:var(--temple);font-size:34px;color:'+fl[1]+';line-height:1.1">'+sc+'</div><div style="color:'+fl[1]+'">'+fl[0]+'</div>'+(_ef.length?'<div class="tiny" style="margin-top:8px;color:var(--moonlight);line-height:1.7">'+_ef.join('<br>')+'</div>':'')+'</div>';}
   h+='<div class="ksec">☀️ Morning</div>';
   h+='<div class="svrow"><div><label class="fl">In bed</label><input type="time" value="'+(cl.sleep.bed||'')+'" onchange="setSleepBed(this.value)"></div><div><label class="fl">Woke up</label><input type="time" value="'+(cl.sleep.wake||'')+'" onchange="setSleepWake(this.value)"></div></div>';
   var hib=hoursInBed(cl.sleep.bed,cl.sleep.wake);h+='<div class="note" id="hibNote" style="margin-top:4px'+(hib==null?';display:none':'')+'">'+(hib!=null?'~'+hib+' h in bed':'')+'</div>';
@@ -1688,9 +1715,27 @@ function eventById(id){var all=MASTER_EVENTS.concat(S.customEvents||[]);for(var 
 function allEvents(){return MASTER_EVENTS.concat(S.customEvents||[]);}
 function trackedSyms(){return S.trackedSyms&&S.trackedSyms.length?S.trackedSyms:DEFAULT_TRACKED;}
 function trackedEvents(){return S.trackedEvents&&S.trackedEvents.length?S.trackedEvents:DEFAULT_EVENTS;}
-function stabilityScore(dk){var cl=S.cycleLog[dk];if(!cl)return null;var sym=cl.sym||{},burden=0,has=false;Object.keys(sym).forEach(function(k){var v=sym[k];if(typeof v==='number'){burden+=v;has=true;}});var ex=cl.exertion||{},exsum=(ex.p||0)+(ex.m||0)+(ex.e||0)+(ex.s||0);var slq=(cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;if(!has&&!exsum&&slq==null)return null;var score=100-burden*4-exsum*2+(slq!=null?(slq-1.5)*4:0);return Math.max(0,Math.min(100,Math.round(score)));}
+function symBurden(cl){var sym=(cl&&cl.sym)||{},b=0,has=false;Object.keys(sym).forEach(function(k){if(typeof sym[k]==='number'){b+=sym[k];has=true;}});return {burden:b,has:has};}
+/* rolling baseline (your recent normal) for sleep quality + symptom load, from up to 21 prior logged days */
+function emberBaseline(dk){var keys=Object.keys(S.cycleLog||{}).filter(function(k){return k<dk;}).sort().slice(-21);var bsum=0,bn=0,ssum=0,sn=0;keys.forEach(function(k){var cl=S.cycleLog[k];var sb=symBurden(cl);if(sb.has){bsum+=sb.burden;bn++;}if(cl.sleep&&typeof cl.sleep.q==='number'){ssum+=cl.sleep.q;sn++;}});return {burden:bn?bsum/bn:null,sleep:sn?ssum/sn:null,days:Math.max(bn,sn)};}
+/* Ember score — for now: sleep quality + symptom severity are the dominant inputs, judged against your
+   own rolling baseline (so increases/decreases move it), with exertion as a minor factor. HRV + resting HR later. */
+function stabilityScore(dk){var cl=S.cycleLog[dk];if(!cl)return null;var sb=symBurden(cl),burden=sb.burden;var ex=cl.exertion||{},exsum=(ex.p||0)+(ex.m||0)+(ex.e||0)+(ex.s||0);var slq=(cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;if(!sb.has&&!exsum&&slq==null)return null;var base=emberBaseline(dk),haveBase=base.days>=3;var score=74;
+  /* symptom severity — biggest driver (only when symptoms were actually logged) */
+  if(sb.has){if(haveBase&&base.burden!=null)score-=(burden-base.burden)*6;score-=burden*1.5;}
+  /* sleep quality — large driver */
+  if(slq!=null){if(haveBase&&base.sleep!=null)score+=(slq-base.sleep)*9;score+=(slq-1.5)*6;}
+  /* exertion — minor */
+  score-=exsum*1.2;
+  return Math.max(0,Math.min(100,Math.round(score)));}
+/* human-readable breakdown of what's shaping the score (transparency in the check-in) */
+function emberFactors(dk){var cl=S.cycleLog[dk]||{},base=emberBaseline(dk),haveBase=base.days>=3,out=[];var sb=symBurden(cl),burden=sb.burden;var slq=(cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;var ex=cl.exertion||{},exsum=(ex.p||0)+(ex.m||0)+(ex.e||0)+(ex.s||0);
+  if(slq!=null){var ds=(haveBase&&base.sleep!=null)?slq-base.sleep:null;out.push('😴 Sleep '+slq+'/3'+(ds!=null?(ds>0.3?' · better than your norm ▲':ds<-0.3?' · below your norm ▼':' · about your norm'):''));}
+  if(sb.has){var db=(haveBase&&base.burden!=null)?burden-base.burden:null;out.push('🩹 Symptom load '+burden+(db!=null?(db>0.5?' · heavier than usual ▼':db<-0.5?' · lighter than usual ▲':' · about usual'):''));}
+  if(exsum>0)out.push('⚡ Exertion '+exsum+'/12');
+  return out;}
 function flameLabel(sc){if(sc==null)return ['—','var(--muted)'];if(sc>=80)return ['Burning bright','#4FB68C'];if(sc>=60)return ['Steady','#6FA88C'];if(sc>=40)return ['Low','#E8B96A'];if(sc>=25)return ['Flickering','#E0743C'];return ['Embers','#9B5C6E'];}
-function flameForToday(){var tk=todayKey(),cl=S.cycleLog[tk]||{};var exsum=cl.exertion?((cl.exertion.p||0)+(cl.exertion.m||0)+(cl.exertion.e||0)+(cl.exertion.s||0)):0;var hasToday=(cl.sym&&Object.keys(cl.sym).length>0)||exsum>0;if(hasToday)return {sc:stabilityScore(tk),mode:'today'};var ysc=stabilityScore(shiftDateKey(tk,-1));if(ysc==null)return {sc:null,mode:'none'};var slq=(cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;var adj=slq!=null?(slq-1.5)*6:0;return {sc:Math.max(0,Math.min(100,Math.round(ysc+adj))),mode:'morning'};}
+function flameForToday(){var tk=todayKey(),cl=S.cycleLog[tk]||{};var exsum=cl.exertion?((cl.exertion.p||0)+(cl.exertion.m||0)+(cl.exertion.e||0)+(cl.exertion.s||0)):0;var hasSymEx=(cl.sym&&Object.keys(cl.sym).length>0)||exsum>0;var sc=stabilityScore(tk);if(sc!=null)return {sc:sc,mode:hasSymEx?'today':'morning'};var ysc=stabilityScore(shiftDateKey(tk,-1));return ysc!=null?{sc:ysc,mode:'yesterday'}:{sc:null,mode:'none'};}
 var SCIENCE={
  menstrual:'Estrogen + progesterone are at their floor; prostaglandins (the cramping chemicals) peak, constricting vessels and triggering contractions. You lose ~15–30mg of iron with the bleed, pain perception runs high, and your data shows this is your worst crash + fog window. Your body is in active repair — rest is the strategy, not lost time.',
  follicular:'Estrogen rises fast, building energy and new brain connections. Insulin sensitivity is high (you use carbs efficiently) and estrogen strengthens your skin barrier + collagen. This is your steadiest, strongest window — best HRV + stability. Front-load the hard things here.',
@@ -1864,6 +1909,7 @@ document.querySelectorAll('nav.tabs button').forEach(function(b){
     var pg=b.dataset.pg;
     document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');});
     document.getElementById('pg-'+pg).classList.add('on');
+    if(pg==='today')renderToday();else if(pg==='water'){renderWater();renderDrinks();}else if(pg==='cycle')renderCycle();else if(pg==='meals')renderMeals();else if(pg==='kitchen')renderKitchen();else if(pg==='tend')renderTend();
     window.scrollTo(0,0);
   };
 });
