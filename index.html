@@ -1565,7 +1565,7 @@ function renderCycleLog(){
   if(!cl.exertion)cl.exertion={};if(!cl.events)cl.events=[];if(!cl.sleep)cl.sleep={};if(!cl.mood)cl.mood=[];if(!cl.sex)cl.sex=[];
   var h='<div class="datestrip"><button class="dnav" onclick="logShift(-1)">‹</button><div class="dlabel"><div class="dl1">'+dateLabel(dk)+'</div><div class="dl2">'+dateSub(dk)+(hasCycle()?' · day '+dayNumFor(dk)+' · '+phaseForDay(dayNumFor(dk)).name:'')+'</div></div><button class="dnav" onclick="logShift(1)">›</button></div>';
   var sc=stabilityScore(dk),fl=flameLabel(sc);
-  if(sc!=null){var _ef=emberFactors(dk);h+='<div class="card" style="margin:0 0 12px;text-align:center"><div class="tiny muted">Your Ember reading · last night’s sleep + your symptom trend</div><div style="font-family:var(--temple);font-size:34px;color:'+fl[1]+';line-height:1.1">'+sc+'</div><div style="color:'+fl[1]+'">'+fl[0]+'</div>'+(_ef.length?'<div class="tiny" style="margin-top:8px;color:var(--moonlight);line-height:1.7">'+_ef.join('<br>')+'</div>':'')+'</div>';}
+  if(sc!=null){var _ef=emberFactors(dk);h+='<div class="card" style="margin:0 0 12px;text-align:center"><div class="tiny muted">Your Ember reading · sleep, symptoms & exertion vs your baseline</div><div style="font-family:var(--temple);font-size:34px;color:'+fl[1]+';line-height:1.1">'+sc+'</div><div style="color:'+fl[1]+'">'+fl[0]+'</div>'+(_ef.length?'<div class="tiny" style="margin-top:8px;color:var(--moonlight);line-height:1.7">'+_ef.join('<br>')+'</div>':'')+'</div>';}
   h+='<div class="ksec">☀️ Morning</div>';
   h+='<div class="svrow"><div><label class="fl">In bed</label><input type="time" value="'+(cl.sleep.bed||'')+'" onchange="setSleepBed(this.value)"></div><div><label class="fl">Woke up</label><input type="time" value="'+(cl.sleep.wake||'')+'" onchange="setSleepWake(this.value)"></div></div>';
   var hib=hoursInBed(cl.sleep.bed,cl.sleep.wake);h+='<div class="note" id="hibNote" style="margin-top:4px'+(hib==null?';display:none':'')+'">'+(hib!=null?'~'+hib+' h in bed':'')+'</div>';
@@ -1724,25 +1724,30 @@ function emberBaseline(dk){var keys=Object.keys(S.cycleLog||{}).filter(function(
 /* recent symptom trajectory — avg burden of the last 3 logged symptom days before dk */
 function recentBurden(dk){var keys=Object.keys(S.cycleLog||{}).filter(function(k){return k<dk&&symBurden(S.cycleLog[k]).has;}).sort().slice(-3);if(!keys.length)return null;var s=0;keys.forEach(function(k){s+=symBurden(S.cycleLog[k]).burden;});return s/keys.length;}
 function emberConfidence(dk){return emberBaseline(dk).days;}
-/* The Ember reading — a forward-looking morning score, like Visible's Stability Score: last night's
-   sleep quality + your recent symptom trend judged against your own baseline, minus yesterday's exertion
-   (payback/PEM risk). It predicts the day coming up; today's own symptoms feed tomorrow, not today.
-   (Overnight HRV + resting HR fold in here later.) */
-function stabilityScore(dk){var cl=S.cycleLog[dk]||null;var base=emberBaseline(dk);var slq=(cl&&cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;var rb=recentBurden(dk);var yex=exSum(S.cycleLog[shiftDateKey(dk,-1)]);
-  if(slq==null&&rb==null&&base.days===0)return null;
-  var score=72;
-  /* last night's sleep — the main recovery signal (proxy for overnight HRV for now) */
-  if(slq!=null){if(base.sleep!=null)score+=(slq-base.sleep)*10;score+=(slq-1.5)*6;}
-  /* recent symptom trend vs your baseline — a flare lowers today's capacity */
-  if(rb!=null&&base.burden!=null)score-=(rb-base.burden)*7;else if(rb!=null)score-=rb*1.0;
-  /* yesterday's exertion — payback risk */
-  score-=yex*1.0;
+/* The Ember reading — starts as a morning prediction (last night's sleep + your recent symptom trend
+   vs your own baseline, Visible-style) and is refined by TODAY's actual symptoms + exertion as you log
+   them. Symptom signal = today's if logged, else the recent trend (so it's honest in the morning and
+   accurate by evening). (Overnight HRV + resting HR fold in here later.) */
+function stabilityScore(dk){var cl=S.cycleLog[dk]||null;var base=emberBaseline(dk);var slq=(cl&&cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;var sbT=symBurden(cl);var todayEx=exSum(cl);var rb=recentBurden(dk);var yex=exSum(S.cycleLog[shiftDateKey(dk,-1)]);
+  var symBasis=sbT.has?sbT.burden:rb; /* today's actual symptoms, or the recent trend before you've logged */
+  if(slq==null&&symBasis==null&&todayEx===0)return null;
+  var score=74;
+  /* last night's sleep — recovery signal */
+  if(slq!=null){score+=(slq-1.5)*6;if(base.sleep!=null)score+=(slq-base.sleep)*5;}
+  /* symptom severity — big driver: absolute load + how it compares to your baseline */
+  if(symBasis!=null){score-=symBasis*1.8;if(base.burden!=null)score-=(symBasis-base.burden)*3.5;}
+  /* exertion — today's directly, plus yesterday's as payback/PEM risk */
+  score-=todayEx*2;
+  score-=yex*0.8;
   return Math.max(0,Math.min(100,Math.round(score)));}
 /* human-readable breakdown of what's shaping the reading (transparency in the check-in) */
-function emberFactors(dk){var base=emberBaseline(dk),out=[];var cl=S.cycleLog[dk]||{};var slq=(cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;var rb=recentBurden(dk);var yex=exSum(S.cycleLog[shiftDateKey(dk,-1)]);
+function emberFactors(dk){var base=emberBaseline(dk),out=[];var cl=S.cycleLog[dk]||{};var slq=(cl.sleep&&typeof cl.sleep.q==='number')?cl.sleep.q:null;var sbT=symBurden(cl);var todayEx=exSum(cl);var rb=recentBurden(dk);var yex=exSum(S.cycleLog[shiftDateKey(dk,-1)]);
   if(slq!=null){var ds=(base.sleep!=null)?slq-base.sleep:null;out.push('😴 Last night’s sleep '+slq+'/3'+(ds!=null?(ds>0.3?' · better than your norm ▲':ds<-0.3?' · below your norm ▼':' · about your norm'):''));}else{out.push('😴 Add last night’s sleep to sharpen this');}
-  if(rb!=null&&base.burden!=null){var db=rb-base.burden;out.push('🩹 Recent symptoms '+(db>0.7?'trending up ▼':db<-0.7?'easing ▲':'holding steady')+' vs your baseline');}else if(rb!=null){out.push('🩹 Recent symptom load ~'+Math.round(rb));}
-  if(yex>0)out.push('⚡ Yesterday’s exertion '+yex+'/12 · watch for payback');
+  if(sbT.has){var db=(base.burden!=null)?sbT.burden-base.burden:null;out.push('🩹 Today’s symptoms '+sbT.burden+(db!=null?(db>0.5?' · heavier than usual ▼':db<-0.5?' · lighter than usual ▲':' · about usual'):''));}
+  else if(rb!=null&&base.burden!=null){var db2=rb-base.burden;out.push('🩹 Recent symptoms '+(db2>0.7?'trending up ▼':db2<-0.7?'easing ▲':'holding steady')+' · log today’s to refine');}
+  else if(rb!=null){out.push('🩹 Recent symptom load ~'+Math.round(rb)+' · log today’s to refine');}
+  if(todayEx>0)out.push('⚡ Today’s exertion '+todayEx+'/12');
+  else if(yex>0)out.push('⚡ Yesterday’s exertion '+yex+'/12 · payback risk');
   if(base.days<EMBER_MIN_DAYS)out.push('📈 Calibrating · '+base.days+'/'+EMBER_MIN_DAYS+' days — readings sharpen as you log');
   return out;}
 function flameLabel(sc){if(sc==null)return ['—','var(--muted)'];if(sc>=80)return ['Burning bright','#4FB68C'];if(sc>=60)return ['Steady','#6FA88C'];if(sc>=40)return ['Low','#E8B96A'];if(sc>=25)return ['Flickering','#E0743C'];return ['Embers','#9B5C6E'];}
