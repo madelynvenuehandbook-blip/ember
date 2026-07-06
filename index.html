@@ -1558,6 +1558,7 @@ function openCycleLog(dk){_logDate=dk;renderCycleLog();showEl('cycleLogSheet');}
 function closeCycleLog(){hideEl('cycleLogSheet');renderCycle();renderToday();}
 function logShift(d){_logDate=shiftDateKey(_logDate,d);renderCycleLog();}
 function symSeg(sy,val){var b='';for(var i=0;i<=3;i++){b+='<button class="'+(val===i?'sel':'')+'" onclick="setSym(\''+sy.id+'\','+i+')">'+i+'</button>';}return '<div class="slide"><div class="sl-t"><b>'+sy.label+'</b><span class="tiny muted">0 → 3</span></div><div class="seg">'+b+'</div></div>';}
+function symToggle(sy,val){var on=(typeof val==='number'&&val>0);return '<div class="slide"><div class="sl-t"><b>'+sy.label+'</b><span class="tiny muted">did it happen?</span></div><div class="seg"><button class="'+(!on?'sel':'')+'" onclick="setSymBin(\''+sy.id+'\',0)">No</button><button class="'+(on?'sel':'')+'" onclick="setSymBin(\''+sy.id+'\',1)">Yes</button></div></div>';}
 function exSeg(k,label,val){var b='';for(var i=0;i<=3;i++){b+='<button class="'+(val===i?'sel':'')+'" onclick="setExertion(\''+k+'\','+i+')">'+i+'</button>';}return '<div class="slide"><div class="sl-t"><b>'+label+'</b><span class="tiny muted">0 none → 3 a lot</span></div><div class="seg">'+b+'</div></div>';}
 function sleepSeg(val){var b='';for(var i=0;i<=3;i++){b+='<button class="'+(val===i?'sel':'')+'" onclick="setSleepQ('+i+')">'+i+'</button>';}return '<div class="slide"><div class="sl-t"><b>Sleep quality</b><span class="tiny muted">0 awful → 3 great</span></div><div class="seg">'+b+'</div></div>';}
 function renderCycleLog(){
@@ -1574,7 +1575,7 @@ function renderCycleLog(){
   if(hasCycle())h+='<label class="fl">Flow</label><div class="tags">'+FLOW.map(function(fn,i){return '<button class="'+(cl.flow===i?'on':'')+'" onclick="setFlow('+i+')">'+fn+'</button>';}).join('')+'</div>';
   if(hasCycle()&&(cl.flow||0)>=1){var _isP=isPeriodDay(dk);h+='<div style="margin-top:10px"><label class="fl">Is this your period?</label><div class="tags"><button class="'+(_isP?'on':'')+'" onclick="setPeriod(true)">🩸 Yes — my period</button><button class="'+(!_isP?'on':'')+'" onclick="setPeriod(false)">Just spotting</button></div><div class="note" style="margin-top:4px">'+(_isP?'Counts toward your cycle length + predictions.':'Logged as spotting — won\'t shift your cycle math.')+'</div></div>';}
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><label class="fl" style="margin:0">Symptoms (0–3)</label><span class="cv" style="font-size:13.5px" onclick="openTrackedSyms()">customize</span></div>';
-  trackedSyms().forEach(function(id){var sy=symById(id);if(sy)h+=symSeg(sy,cl.sym[id]);});
+  trackedSyms().forEach(function(id){var sy=symById(id);if(sy)h+=(sy.bin?symToggle(sy,cl.sym[id]):symSeg(sy,cl.sym[id]));});
   h+='<div class="ksec">Exertion · 0–3</div>'+exSeg('p','Physical',cl.exertion.p)+exSeg('m','Mental',cl.exertion.m)+exSeg('e','Emotional',cl.exertion.e)+exSeg('s','Social',cl.exertion.s);
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px"><div class="ksec" style="margin:0">Today I…</div><span class="cv" style="font-size:13.5px" onclick="openTrackedEvents()">customize</span></div><div class="tags">'+trackedEvents().map(function(eid){var ev=eventById(eid);return ev?'<button class="'+(cl.events.indexOf(eid)>=0?'on':'')+'" onclick="toggleEvent(\''+eid+'\')">'+ev.emoji+' '+ev.label+'</button>':'';}).join('')+'</div>';
   trackedEvents().forEach(function(eid){if(!EVENT_DETAIL[eid]||cl.events.indexOf(eid)<0)return;var cfg=EVENT_DETAIL[eid],ev=eventById(eid),cur=(cl.eventDetails&&cl.eventDetails[eid])||'';var hist=eventDetailHistory(eid).filter(function(x){return x!==cur;}).slice(0,6);h+='<div style="margin-top:8px"><label class="fl">'+(ev?ev.emoji+' ':'')+cfg.label+'</label><input id="evd_'+eid+'" value="'+esc(cur)+'" placeholder="'+cfg.ph+'" oninput="setEventDetail(\''+eid+'\',this.value)" autocomplete="off">'+(hist.length?'<div class="tags" style="margin-top:6px">'+hist.map(function(v){return '<button onclick="pickEventDetail(\''+eid+'\',this)">'+esc(v)+'</button>';}).join('')+'</div>':'')+'</div>';});
@@ -1590,10 +1591,11 @@ function renderCycleLog(){
 function setFlow(i){var cl=cycleLogFor(_logDate);cl.flow=i;if(i===0)delete cl.period;persist();recomputeCycle();renderCycleLog();}
 function setPeriod(b){var cl=cycleLogFor(_logDate);cl.period=!!b;persist();recomputeCycle();renderCycleLog();}
 function setSym(id,v){var cl=cycleLogFor(_logDate);if(cl.sym[id]===v){delete cl.sym[id];}else cl.sym[id]=v;persist();renderCycleLog();}
+function setSymBin(id,v){var cl=cycleLogFor(_logDate);if(v){cl.sym[id]=3;}else{delete cl.sym[id];}persist();renderCycleLog();}
 function setSleepBed(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.bed=v;persist();updateHibNote();}
 function setSleepWake(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.wake=v;persist();updateHibNote();}
 function updateHibNote(){var el=document.getElementById('hibNote');if(!el)return;var cl=cycleLogFor(_logDate);var hib=hoursInBed(cl.sleep&&cl.sleep.bed,cl.sleep&&cl.sleep.wake);if(hib!=null){el.textContent='~'+hib+' h in bed';el.style.display='';}else{el.textContent='';el.style.display='none';}}
-function hoursInBed(bed,wake){if(!bed||!wake)return null;function mn(t){var pp=t.split(':');return (+pp[0])*60+(+pp[1]);}var d=mn(wake)-mn(bed);if(d<0)d+=1440;return Math.round(d/60*10)/10;}
+function hoursInBed(bed,wake){if(!bed||!wake)return null;function mn(t){var pp=t.split(':');return (+pp[0])*60+(+pp[1]);}var d=((mn(wake)-mn(bed))%1440+1440)%1440;if(d>14*60)d-=12*60;/* >14h in bed is almost always an AM/PM slip on the bed time — correct the derived hours (stored times unchanged) */return Math.round(d/60*10)/10;}
 function setSleepQ(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.q=v;persist();renderCycleLog();}
 function setExertion(k,v){var cl=cycleLogFor(_logDate);if(!cl.exertion)cl.exertion={};cl.exertion[k]=v;persist();renderCycleLog();}
 function toggleEvent(id){var cl=cycleLogFor(_logDate);if(!cl.events)cl.events=[];var i=cl.events.indexOf(id);if(i>=0)cl.events.splice(i,1);else cl.events.push(id);persist();renderCycleLog();}
@@ -1691,7 +1693,7 @@ function moonPhase(dk){var d=new Date(dk+'T12:00:00').getTime();var ref=new Date
 var FLOW=['none','spotting','light','medium','heavy'];
 var FLOW_COLOR=['transparent','#7A3B4A','#9B5C6E','#B5485F','#8B2942'];
 var MASTER_SYM=[
- {id:'crash',label:'Crash / PEM',cat:'autonomic'},{id:'fatigue',label:'Fatigue',cat:'autonomic'},{id:'palpitations',label:'Palpitations',cat:'autonomic'},{id:'tremors',label:'Tremors',cat:'autonomic'},{id:'lightheaded',label:'Lightheaded / dizzy',cat:'autonomic'},
+ {id:'crash',label:'Crash / PEM',cat:'autonomic',bin:true},{id:'fatigue',label:'Fatigue',cat:'autonomic'},{id:'palpitations',label:'Palpitations',cat:'autonomic'},{id:'tremors',label:'Tremors',cat:'autonomic'},{id:'lightheaded',label:'Lightheaded / dizzy',cat:'autonomic'},
  {id:'brainfog',label:'Brain fog',cat:'neuro'},{id:'derealization',label:'Derealization',cat:'neuro'},{id:'tinnitus',label:'Tinnitus',cat:'neuro'},{id:'blurredvision',label:'Blurred vision',cat:'neuro'},
  {id:'headache',label:'Headache',cat:'pain'},{id:'migraine',label:'Migraine',cat:'pain'},{id:'jointpain',label:'Joint pain',cat:'pain'},{id:'muscleaches',label:'Muscle aches',cat:'pain'},{id:'backache',label:'Backache',cat:'pain'},
  {id:'stomachpain',label:'Stomach pain',cat:'gi'},{id:'nausea',label:'Nausea',cat:'gi'},{id:'diarrhea',label:'Diarrhea',cat:'gi'},{id:'constipation',label:'Constipation',cat:'gi'},{id:'lackappetite',label:'Lack of appetite',cat:'gi'},{id:'bloating',label:'Bloating',cat:'gi'},
