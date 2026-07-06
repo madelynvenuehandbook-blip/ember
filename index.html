@@ -395,9 +395,12 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       <div class="note" id="lyteWhy"></div>
     </div>
     <div class="card">
-      <h3>Drinks <span class="muted tiny">· not food — tea, coffee, milk</span></h3>
+      <h3>Drinks <span class="muted tiny">· caffeine, alcohol, juice & more</span></h3>
       <div class="sub" id="caffLine"></div>
-      <div id="drinkChips"></div>
+      <input id="drinkSearch" placeholder="Search a drink to log — juice, wine, soda…" autocomplete="off" oninput="onDrinkSearch()" style="margin-top:8px">
+      <div id="drinkResults" style="margin-top:6px"></div>
+      <div class="tiny muted" style="margin-top:10px">Quick log</div>
+      <div id="drinkChips" style="margin-top:4px"></div>
       <div id="drinkLog" style="margin-top:6px"></div>
       <div style="margin-top:8px"><button class="ghost" onclick="addCustomDrink()">＋ custom drink</button></div>
     </div>
@@ -538,6 +541,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 </div>
 
 <div class="serv" id="servSheet"><div id="servBody"></div></div>
+<div class="serv" id="drinkSheet"><div id="drinkBody"></div></div>
 <div class="serv" id="reactSheet"><div id="reactBody"></div></div>
 
 <div class="sheet" id="reactReportSheet">
@@ -1087,19 +1091,46 @@ function undoLastInput(){var k=viewKey();var w=S.hydration[k];if(!w||!w.log||!w.
 function addCustomWater(){var v=prompt('How many ml?');if(v&&!isNaN(v))addWater(parseInt(v,10));}
 function addLyte(n){var k=viewKey();var w=S.hydration[k]||{ml:0,lyte:0};w.lyte=Math.max(0,(w.lyte||0)+n);S.hydration[k]=w;persist();renderWater();renderToday();}
 /* ===== DRINKS (beverages, not food) ===== */
+var DRINK_DB=[
+ {id:'coffee',name:'Coffee',emoji:'☕',caf:95,cat:'caffeine'},{id:'espresso',name:'Espresso',emoji:'☕',caf:64,cat:'caffeine'},{id:'latte',name:'Latte',emoji:'☕',caf:75,cat:'caffeine'},{id:'cappuccino',name:'Cappuccino',emoji:'☕',caf:75,cat:'caffeine'},{id:'coldbrew',name:'Cold brew',emoji:'☕',caf:155,cat:'caffeine'},{id:'decaf',name:'Decaf coffee',emoji:'☕',caf:3,cat:'caffeine'},
+ {id:'blacktea',name:'Black tea',emoji:'🫖',caf:47,cat:'caffeine'},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28,cat:'caffeine'},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70,cat:'caffeine'},{id:'chai',name:'Chai',emoji:'🫖',caf:50,cat:'caffeine'},{id:'yerba',name:'Yerba mate',emoji:'🧉',caf:85,cat:'caffeine'},{id:'energy',name:'Energy drink',emoji:'⚡',caf:80,cat:'caffeine'},
+ {id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0,cat:'herbal'},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0,cat:'herbal'},{id:'peppermint',name:'Peppermint tea',emoji:'🌿',caf:0,cat:'herbal'},{id:'ginger',name:'Ginger tea',emoji:'🫚',caf:0,cat:'herbal'},{id:'chamomile',name:'Chamomile tea',emoji:'🌼',caf:0,cat:'herbal'},
+ {id:'milk',name:'Milk',emoji:'🥛',caf:0,cat:'dairy'},{id:'almondmilk',name:'Almond milk',emoji:'🥛',caf:0,cat:'dairy'},{id:'oatmilk',name:'Oat milk',emoji:'🥛',caf:0,cat:'dairy'},
+ {id:'oj',name:'Orange juice',emoji:'🧃',caf:0,cat:'juice'},{id:'applejuice',name:'Apple juice',emoji:'🧃',caf:0,cat:'juice'},{id:'cranberryjuice',name:'Cranberry juice',emoji:'🧃',caf:0,cat:'juice'},{id:'grapejuice',name:'Grape juice',emoji:'🧃',caf:0,cat:'juice'},{id:'pineapplejuice',name:'Pineapple juice',emoji:'🧃',caf:0,cat:'juice'},{id:'greenjuice',name:'Green juice',emoji:'🥬',caf:0,cat:'juice'},{id:'lemonade',name:'Lemonade',emoji:'🍋',caf:0,cat:'juice'},
+ {id:'cola',name:'Cola',emoji:'🥤',caf:34,cat:'soda'},{id:'gingerale',name:'Ginger ale',emoji:'🥤',caf:0,cat:'soda'},{id:'soda',name:'Soda',emoji:'🥤',caf:0,cat:'soda'},{id:'sparkling',name:'Sparkling water',emoji:'💧',caf:0,cat:'water'},{id:'electrolyte',name:'Electrolyte drink',emoji:'💧',caf:0,cat:'water'},{id:'coconutwater',name:'Coconut water',emoji:'🥥',caf:0,cat:'other'},{id:'kombucha',name:'Kombucha',emoji:'🍶',caf:0,cat:'other'},{id:'smoothie',name:'Smoothie',emoji:'🥤',caf:0,cat:'other'},{id:'bonebroth',name:'Bone broth',emoji:'🍲',caf:0,cat:'other'},
+ {id:'beer',name:'Beer',emoji:'🍺',caf:0,cat:'alcohol'},{id:'winered',name:'Red wine',emoji:'🍷',caf:0,cat:'alcohol'},{id:'winewhite',name:'White wine',emoji:'🥂',caf:0,cat:'alcohol'},{id:'champagne',name:'Champagne',emoji:'🥂',caf:0,cat:'alcohol'},{id:'cocktail',name:'Cocktail',emoji:'🍸',caf:0,cat:'alcohol'},{id:'margarita',name:'Margarita',emoji:'🍹',caf:0,cat:'alcohol'},{id:'vodka',name:'Vodka',emoji:'🥃',caf:0,cat:'alcohol'},{id:'whiskey',name:'Whiskey',emoji:'🥃',caf:0,cat:'alcohol'},{id:'tequila',name:'Tequila',emoji:'🥃',caf:0,cat:'alcohol'},{id:'gin',name:'Gin',emoji:'🥃',caf:0,cat:'alcohol'},{id:'rum',name:'Rum',emoji:'🥃',caf:0,cat:'alcohol'},{id:'hardseltzer',name:'Hard seltzer',emoji:'🥤',caf:0,cat:'alcohol'},{id:'cider',name:'Hard cider',emoji:'🍺',caf:0,cat:'alcohol'}
+];
+var DRINK_UNITS=['oz','ml','cup','glass','can','bottle','shot','standard drink'];
+function defaultDrinkUnit(cat){return cat==='alcohol'?'standard drink':cat==='soda'?'can':cat==='juice'?'oz':(cat==='caffeine'||cat==='dairy'||cat==='herbal')?'cup':'glass';}
+function allDrinks(){var seen={},out=[];DRINK_DB.forEach(function(d){seen[d.id]=1;out.push(d);});(S.drinkTypes||[]).forEach(function(d){if(!seen[d.id])out.push(d);});return out;}
+function drinkById(id){var a=allDrinks();for(var i=0;i<a.length;i++)if(a[i].id===id)return a[i];return null;}
 function drinksDay(dk){if(!S.drinksLog[dk])S.drinksLog[dk]=[];return S.drinksLog[dk];}
-function logDrink(id){var t=(S.drinkTypes||[]).filter(function(x){return x.id===id;})[0];if(!t)return;drinksDay(viewKey()).push({id:t.id,name:t.name,emoji:t.emoji,caf:t.caf||0,t:nowTime()});persist();renderDrinks();}
+function logDrink(id){var d=drinkById(id);if(!d)return;var cat=d.cat||'other';drinksDay(viewKey()).push({id:d.id,name:d.name,emoji:d.emoji,cat:cat,qty:1,unit:defaultDrinkUnit(cat),caf:d.caf||0,t:nowTime()});persist();renderDrinks();flash('Logged · '+d.name);}
 function removeDrink(i){drinksDay(viewKey()).splice(i,1);persist();renderDrinks();}
 function dayCaffeine(dk){return (S.drinksLog[dk]||[]).reduce(function(a,d){return a+(d.caf||0);},0);}
 var CAFF_NOTE={menstrual:'Ease off — caffeine is a vasoconstrictor + worsens cramps.',follicular:'Full caffeine is fine — you metabolize it fastest now.',ovulation:'⚠ Half-caf or matcha — your resting HR runs high this week.',luteal:'Taper late luteal — protects blood sugar + magnesium.'};
-function addCustomDrink(){var nm=prompt('Drink name?');if(!nm)return;var caf=prompt('Caffeine mg per serving? (0 if none)','0');S.drinkTypes.push({id:'d_'+Date.now(),name:nm,emoji:'🥤',caf:parseInt(caf,10)||0});persist();renderDrinks();}
+function addCustomDrink(){var nm=prompt('Drink name?');if(!nm)return;var caf=prompt('Caffeine mg per serving? (0 if none)','0');S.drinkTypes.push({id:'d_'+Date.now(),name:nm,emoji:'🥤',caf:parseInt(caf,10)||0,cat:'other'});persist();renderDrinks();}
+function onDrinkSearch(){var q=(document.getElementById('drinkSearch').value||'').trim().toLowerCase();var host=document.getElementById('drinkResults');if(!host)return;if(!q){host.innerHTML='';return;}var res=allDrinks().filter(function(d){return d.name.toLowerCase().indexOf(q)>=0;}).slice(0,14);host.innerHTML=res.length?res.map(function(d){return '<div class="frow" onclick="openDrinkAmount(\''+d.id+'\')"><div class="fi"><div class="fn">'+(d.emoji||'🥤')+' '+d.name+'</div><div class="fmeta">'+(d.cat||'other')+(d.caf?' · '+d.caf+' mg caffeine/serving':'')+'</div></div><div class="fk">＋</div></div>';}).join(''):'<div class="note">No match — tap ＋ custom drink to add your own.</div>';}
+var _drinkCtx=null;
+function openDrinkAmount(id){var d=drinkById(id);if(!d)return;_drinkCtx={ref:d,qty:1,unit:defaultDrinkUnit(d.cat||'other')};drinkRender();showEl('backdrop');showEl('drinkSheet');}
+function drinkRender(){var c=_drinkCtx;if(!c)return;var d=c.ref;var h='';
+  h+='<div class="svn">'+(d.emoji||'🥤')+' '+d.name+'</div><div class="svb">'+(d.cat||'other')+(d.caf?' · '+Math.round((d.caf||0)*c.qty)+' mg caffeine':'')+'</div>';
+  h+='<div class="svrow"><div><label class="fl">Amount</label><input type="number" inputmode="decimal" value="'+c.qty+'" oninput="drinkQty(this.value)"></div><div><label class="fl">Unit</label><select onchange="drinkUnit(this.value)">'+DRINK_UNITS.map(function(u){return '<option value="'+u+'"'+(u===c.unit?' selected':'')+'>'+u+'</option>';}).join('')+'</select></div></div>';
+  if((d.cat||'')==='alcohol')h+='<div class="svb" style="margin-top:6px;opacity:.78">Tracking how much — no calorie math.</div>';
+  h+='<button class="act" style="width:100%;margin-top:14px" onclick="logDrinkAmount()">Log '+d.name+'</button>';
+  document.getElementById('drinkBody').innerHTML=h;}
+function drinkQty(v){_drinkCtx.qty=num(v)||1;drinkRender();}
+function drinkUnit(v){_drinkCtx.unit=v;drinkRender();}
+function closeDrink(){hideEl('drinkSheet');hideEl('backdrop');_drinkCtx=null;}
+function logDrinkAmount(){var c=_drinkCtx;if(!c)return;var d=c.ref;drinksDay(viewKey()).push({id:d.id,name:d.name,emoji:d.emoji,cat:d.cat||'other',qty:c.qty,unit:c.unit,caf:Math.round((d.caf||0)*c.qty),t:nowTime()});persist();closeDrink();var ds=document.getElementById('drinkSearch');if(ds)ds.value='';var dr=document.getElementById('drinkResults');if(dr)dr.innerHTML='';renderDrinks();flash('Logged · '+c.qty+' '+c.unit+' '+d.name);}
 function renderDrinks(){
   var host=document.getElementById('drinkChips');if(!host)return;
   host.innerHTML=(S.drinkTypes||[]).map(function(t){return '<span class="chip" onclick="logDrink(\''+t.id+'\')">'+(t.emoji||'🥤')+' '+t.name+(t.caf?' <span class="cm" style="display:inline;color:var(--muted)">'+t.caf+'mg</span>':'')+'</span>';}).join('');
   var vk=viewKey(),list=drinksDay(vk);
-  document.getElementById('drinkLog').innerHTML=list.length?list.map(function(d,i){return '<div class="logrow"><div>'+(d.emoji||'')+' '+d.name+'<span class="macros">'+(d.caf?d.caf+'mg caffeine · ':'')+(d.t||'')+'</span></div><div class="x" onclick="removeDrink('+i+')">×</div></div>';}).join(''):'<div class="note">Tap a drink to log it.</div>';
+  document.getElementById('drinkLog').innerHTML=list.length?list.map(function(d,i){var amt=(d.qty?(+d.qty)+' '+(d.unit||'')+' · ':'');return '<div class="logrow"><div>'+(d.emoji||'')+' '+d.name+'<span class="macros">'+amt+(d.caf?d.caf+'mg caffeine · ':'')+(d.t||'')+'</span></div><div class="x" onclick="removeDrink('+i+')">×</div></div>';}).join(''):'<div class="note">Search a drink above, or tap a quick one, to log it.</div>';
   var caf=dayCaffeine(vk),note=hasCycle()?(CAFF_NOTE[phaseForDay(dayNumFor(vk)).key]||''):'';
-  document.getElementById('caffLine').innerHTML='Caffeine '+(vk===todayKey()?'today':dateSub(vk))+': <b style="color:var(--candle)">'+caf+' mg</b>'+(note?' · '+note:'');
+  var alc=list.filter(function(d){return d.cat==='alcohol';}).reduce(function(a,d){return a+(+d.qty||1);},0);
+  document.getElementById('caffLine').innerHTML='Caffeine '+(vk===todayKey()?'today':dateSub(vk))+': <b style="color:var(--candle)">'+caf+' mg</b>'+(note?' · '+note:'')+(alc>0?'<br>🍷 Alcohol: <b style="color:var(--candle)">'+(Math.round(alc*10)/10)+'</b> '+(alc===1?'drink':'drinks'):'');
 }
 
 /* ===== MEALS ENGINE ===== */
@@ -1553,8 +1584,9 @@ function periodDayNumFor(t){var runs=periodRuns();for(var i=0;i<runs.length;i++)
 function periodDayNum(){return periodDayNumFor(todayKey());}
 
 /* ---- daily cycle log ---- */
-var _logDate=null;
-function openCycleLog(dk){_logDate=dk;renderCycleLog();showEl('cycleLogSheet');}
+var _logDate=null,_forceShowCyc=false;
+function setLogDatePhaseShow(){_forceShowCyc=true;renderCycleLog();}
+function openCycleLog(dk){_logDate=dk;_forceShowCyc=false;renderCycleLog();showEl('cycleLogSheet');}
 function closeCycleLog(){hideEl('cycleLogSheet');renderCycle();renderToday();}
 function logShift(d){_logDate=shiftDateKey(_logDate,d);renderCycleLog();}
 function symSeg(sy,val){var b='';for(var i=0;i<=3;i++){b+='<button class="'+(val===i?'sel':'')+'" onclick="setSym(\''+sy.id+'\','+i+')">'+i+'</button>';}return '<div class="slide"><div class="sl-t"><b>'+sy.label+'</b><span class="tiny muted">0 → 3</span></div><div class="seg">'+b+'</div></div>';}
@@ -1575,10 +1607,13 @@ function renderCycleLog(){
   if(hasCycle())h+='<label class="fl">Flow</label><div class="tags">'+FLOW.map(function(fn,i){return '<button class="'+(cl.flow===i?'on':'')+'" onclick="setFlow('+i+')">'+fn+'</button>';}).join('')+'</div>';
   if(hasCycle()&&(cl.flow||0)>=1){var _isP=isPeriodDay(dk);h+='<div style="margin-top:10px"><label class="fl">Is this your period?</label><div class="tags"><button class="'+(_isP?'on':'')+'" onclick="setPeriod(true)">🩸 Yes — my period</button><button class="'+(!_isP?'on':'')+'" onclick="setPeriod(false)">Just spotting</button></div><div class="note" style="margin-top:4px">'+(_isP?'Counts toward your cycle length + predictions.':'Logged as spotting — won\'t shift your cycle math.')+'</div></div>';}
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><label class="fl" style="margin:0">Symptoms (0–3)</label><span class="cv" style="font-size:13.5px" onclick="openTrackedSyms()">customize</span></div>';
-  trackedSyms().forEach(function(id){var sy=symById(id);if(sy)h+=(sy.bin?symToggle(sy,cl.sym[id]):symSeg(sy,cl.sym[id]));});
+  var _phk=hasCycle()?phaseKeyForDate(dk):null;var _showCyc=(!hasCycle()||_phk==='luteal'||_phk==='menstrual'||_forceShowCyc),_hidCyc=0;
+  trackedSyms().forEach(function(id){var sy=symById(id);if(!sy)return;if(sy.cat==='cycle'&&!_showCyc&&cl.sym[id]==null){_hidCyc++;return;}h+=(sy.bin?symToggle(sy,cl.sym[id]):symSeg(sy,cl.sym[id]));});
+  if(_hidCyc)h+='<div class="note" style="margin-top:6px;opacity:.75">🌙 '+_hidCyc+' cycle symptom'+(_hidCyc>1?'s':'')+' surface in your luteal + menstrual window (you\'re in '+(_phk||'')+'). <span class="cv" onclick="setLogDatePhaseShow()">show anyway</span></div>';
   h+='<div class="ksec">Exertion · 0–3</div>'+exSeg('p','Physical',cl.exertion.p)+exSeg('m','Mental',cl.exertion.m)+exSeg('e','Emotional',cl.exertion.e)+exSeg('s','Social',cl.exertion.s);
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px"><div class="ksec" style="margin:0">Today I…</div><span class="cv" style="font-size:13.5px" onclick="openTrackedEvents()">customize</span></div><div class="tags">'+trackedEvents().map(function(eid){var ev=eventById(eid);return ev?'<button class="'+(cl.events.indexOf(eid)>=0?'on':'')+'" onclick="toggleEvent(\''+eid+'\')">'+ev.emoji+' '+ev.label+'</button>':'';}).join('')+'</div>';
   trackedEvents().forEach(function(eid){if(!EVENT_DETAIL[eid]||cl.events.indexOf(eid)<0)return;var cfg=EVENT_DETAIL[eid],ev=eventById(eid),cur=(cl.eventDetails&&cl.eventDetails[eid])||'';var hist=eventDetailHistory(eid).filter(function(x){return x!==cur;}).slice(0,6);h+='<div style="margin-top:8px"><label class="fl">'+(ev?ev.emoji+' ':'')+cfg.label+'</label><input id="evd_'+eid+'" value="'+esc(cur)+'" placeholder="'+cfg.ph+'" oninput="setEventDetail(\''+eid+'\',this.value)" autocomplete="off">'+(hist.length?'<div class="tags" style="margin-top:6px">'+hist.map(function(v){return '<button onclick="pickEventDetail(\''+eid+'\',this)">'+esc(v)+'</button>';}).join('')+'</div>':'')+'</div>';});
+  if(S.substances&&S.substances.length){var _al=alchDay(_logDate);h+='<div class="ksec">Substances <span class="muted tiny">· shared with Alchemy</span></div><div class="tags">'+S.substances.map(function(x){var on=!!_al.items[x.id];return '<button class="'+(on?'on':'')+'" onclick="ciToggleSub(\''+x.id+'\')">'+x.emoji+' '+x.name+(on?' ✓':'')+'</button>';}).join('')+'</div>'+S.substances.filter(function(x){return _al.items[x.id];}).map(function(x){var it=_al.items[x.id];return '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><span style="flex:0 0 auto">'+x.emoji+' '+x.name+(it.t?' · '+it.t:'')+'</span><input style="flex:1;min-width:0" value="'+esc(it.dose||'')+'" oninput="ciSetDose(\''+x.id+'\',this.value)" placeholder="dose · 2 hits · 0.2g · 100mg"></div>';}).join('');}
   if(hasCycle()){
     h+='<div class="ksec">Mood</div><div class="tags">'+MOOD_TAGS.map(function(m){return '<button class="'+(cl.mood.indexOf(m)>=0?'on':'')+'" onclick="toggleMood(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
     h+='<div class="ksec">Sex & drive</div><div class="tags">'+SEX_TAGS.map(function(m){return '<button class="'+(cl.sex.indexOf(m)>=0?'on':'')+'" onclick="toggleSex(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
@@ -1698,11 +1733,11 @@ var MASTER_SYM=[
  {id:'headache',label:'Headache',cat:'pain'},{id:'migraine',label:'Migraine',cat:'pain'},{id:'jointpain',label:'Joint pain',cat:'pain'},{id:'muscleaches',label:'Muscle aches',cat:'pain'},{id:'backache',label:'Backache',cat:'pain'},
  {id:'stomachpain',label:'Stomach pain',cat:'gi'},{id:'nausea',label:'Nausea',cat:'gi'},{id:'diarrhea',label:'Diarrhea',cat:'gi'},{id:'constipation',label:'Constipation',cat:'gi'},{id:'lackappetite',label:'Lack of appetite',cat:'gi'},{id:'bloating',label:'Bloating',cat:'gi'},
  {id:'anxiety',label:'Anxiety',cat:'mind'},{id:'depression',label:'Depression',cat:'mind'},{id:'insomnia',label:'Insomnia',cat:'mind'},
- {id:'cramps',label:'Cramps',cat:'cycle'},{id:'tenderbreasts',label:'Tender breasts',cat:'cycle'},{id:'acne',label:'Acne',cat:'cycle'},{id:'cheekflare',label:'Cheek flare',cat:'cycle'},{id:'vaginalitching',label:'Vaginal itching',cat:'cycle'},
+ {id:'cramps',label:'Cramps',cat:'cycle'},{id:'tenderbreasts',label:'Tender breasts',cat:'cycle'},{id:'breastswelling',label:'Breast swelling',cat:'cycle'},{id:'acne',label:'Acne',cat:'cycle'},{id:'cheekflare',label:'Cheek flare',cat:'cycle'},{id:'vaginalitching',label:'Vaginal itching',cat:'cycle'},{id:'moodswings',label:'Mood swings',cat:'cycle'},{id:'irritability',label:'Irritability',cat:'cycle'},{id:'tearful',label:'Tearful / weepy',cat:'cycle'},{id:'cravings',label:'Food cravings',cat:'cycle'},{id:'appetiteup',label:'Increased appetite',cat:'cycle'},{id:'waterretention',label:'Water retention / bloat',cat:'cycle'},{id:'lowbackpain',label:'Low back pain',cat:'cycle'},{id:'pelvicpain',label:'Pelvic pain',cat:'cycle'},{id:'ovulationpain',label:'Ovulation pain',cat:'cycle'},{id:'libidohigh',label:'High libido',cat:'cycle'},{id:'libidolow',label:'Low libido',cat:'cycle'},
  {id:'hotflashes',label:'Hot flashes',cat:'meno'},{id:'nightsweats',label:'Night sweats',cat:'meno'},{id:'vaginaldryness',label:'Vaginal dryness',cat:'meno'},
  {id:'dryskin',label:'Dry skin',cat:'skin'},{id:'dryeyes',label:'Dry eyes',cat:'skin'}
 ];
-var DEFAULT_TRACKED=['crash','fatigue','palpitations','tremors','headache','brainfog','anxiety','depression','derealization','jointpain','stomachpain','migraine','muscleaches','tinnitus','blurredvision','diarrhea','lackappetite','nausea','constipation','lightheaded'];
+var DEFAULT_TRACKED=['crash','fatigue','palpitations','tremors','headache','brainfog','anxiety','depression','derealization','jointpain','stomachpain','migraine','muscleaches','tinnitus','blurredvision','diarrhea','lackappetite','nausea','constipation','lightheaded','cramps','tenderbreasts','moodswings','cravings','acne','irritability'];
 var MASTER_EVENTS=[
  {id:'walk',label:'Walk',emoji:'🚶'},{id:'yoga',label:'Yoga',emoji:'🧘'},{id:'strength',label:'Strength',emoji:'🏋️'},{id:'hike',label:'Hike',emoji:'🥾'},{id:'run',label:'Run',emoji:'🏃'},{id:'cycling',label:'Cycling',emoji:'🚴'},{id:'dance',label:'Dance',emoji:'💃'},{id:'swim',label:'Swim',emoji:'🏊'},{id:'snowboard',label:'Snowboard',emoji:'🏂'},
  {id:'infusion',label:'Infusion',emoji:'💧'},{id:'massage',label:'Massage',emoji:'💆'},{id:'antibiotics',label:'Antibiotics',emoji:'💊'},{id:'albuterol',label:'Albuterol',emoji:'🫁'},{id:'infection',label:'Infection',emoji:'🦠'},{id:'bigstress',label:'Big stress',emoji:'😣'},{id:'travel',label:'Travel',emoji:'✈️'}
@@ -1821,15 +1856,19 @@ function doUndo(){if(_undo){_undo();_undo=null;flash('Undone.');}}
 function alchDay(dk){if(!S.alchemyLog[dk])S.alchemyLog[dk]={items:{},note:''};if(!S.alchemyLog[dk].items)S.alchemyLog[dk].items={};return S.alchemyLog[dk];}
 function subById(id){return (S.substances||[]).filter(function(x){return x.id===id;})[0];}
 function protocolToday(){var pr=S.protocol;if(!pr||!pr.active)return null;var t=todayKey();if(pr.start&&t<pr.start)return null;if(pr.end&&t>pr.end)return null;return Object.keys((pr.days&&pr.days[t])||{});}
-function toggleAlch(id){var a=alchDay(todayKey());if(a.items[id])delete a.items[id];else a.items[id]={t:nowTime(),dose:(protoDosesToday()[id]||'')};persist();renderAlchemy();}
+function toggleAlchFor(dk,id){var a=alchDay(dk);var on;if(a.items[id]){delete a.items[id];on=false;}else{a.items[id]={t:(dk===todayKey()?nowTime():''),dose:(dk===todayKey()?(protoDosesToday()[id]||''):'')};on=true;}persist();if(on){var x=subById(id);if(x)flash('Logged · '+x.emoji+' '+x.name);}return on;}
+function toggleAlch(id){toggleAlchFor(todayKey(),id);renderAlchemy();}
+function setAlchDoseFor(dk,id,v){var a=alchDay(dk);if(a.items[id])a.items[id].dose=v;persist();}
+function setAlchDose(id,v){setAlchDoseFor(todayKey(),id,v);}
 function setAlchNote(v){alchDay(todayKey()).note=v;persist();}
-function setAlchDose(id,v){var a=alchDay(todayKey());if(a.items[id])a.items[id].dose=v;persist();}
+function ciToggleSub(id){toggleAlchFor(_logDate,id);renderCycleLog();}
+function ciSetDose(id,v){setAlchDoseFor(_logDate,id,v);}
 function protoDosesToday(){var pr=S.protocol;if(!pr||!pr.active)return {};var t=todayKey();if(pr.start&&t<pr.start)return {};if(pr.end&&t>pr.end)return {};return (pr.days&&pr.days[t])||{};}
 function protocolAdherence(){var pr=S.protocol;if(!pr||!pr.active||!pr.start)return null;var end=(pr.end&&pr.end<todayKey())?pr.end:todayKey();var list=[],d=pr.start;var guard=0;while(d<=end&&guard<400){list.push(d);d=shiftDateKey(d,1);guard++;}var adhered=0,streak=0;function sig(dk){var sched=Object.keys((pr.days[dk]||{})).sort().join(',');var act=Object.keys(((S.alchemyLog[dk]||{}).items)||{}).sort().join(',');return sched===act;}list.forEach(function(dk){if(sig(dk))adhered++;});for(var i=list.length-1;i>=0;i--){if(sig(list[i]))streak++;else break;}return {adhered:adhered,total:list.length,streak:streak};}
 function renderAlchemy(){
   var host=document.getElementById('alchToggles');if(!host)return;
   var a=alchDay(todayKey()),sched=protocolToday(),doses=protoDosesToday(),pl=document.getElementById('alchProtoLine');
-  if(sched===null){pl.innerHTML='No protocol running — log freely below. Tap ⚗ Protocol to set one.';}
+  if(sched===null){pl.innerHTML='No protocol running — tap a substance below to log it (saves instantly). Tap ⚗ Protocol to set one.';}
   else if(!sched.length){pl.innerHTML='<b style="color:var(--moonlight)">Today: off day</b> — rest from substances';}
   else{pl.innerHTML='<b style="color:var(--candle)">Today’s protocol:</b> '+sched.map(function(id){var x=subById(id);return (x?x.emoji+' '+x.name:id)+(doses[id]?' ('+doses[id]+')':'');}).join(' · ');}
   var adh=protocolAdherence();
@@ -1837,7 +1876,7 @@ function renderAlchemy(){
   if(!(S.substances&&S.substances.length)){host.innerHTML='<div class="note">No substances yet. Tap ＋ Substances.</div>';}
   else{
     var chips='<div class="tags">'+S.substances.map(function(x){var done=!!a.items[x.id],isS=sched&&sched.indexOf(x.id)>=0;return '<button class="'+(done?'on':'')+'" onclick="toggleAlch(\''+x.id+'\')">'+x.emoji+' '+x.name+(done?' ✓':(isS?' ·due':''))+'</button>';}).join('')+'</div>';
-    var doses=S.substances.filter(function(x){return a.items[x.id];}).map(function(x){var it=a.items[x.id];return '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><span style="flex:0 0 auto">'+x.emoji+' '+x.name+'</span><input style="flex:1;min-width:0" value="'+esc(it.dose||'')+'" oninput="setAlchDose(\''+x.id+'\',this.value)" placeholder="dose · 2 hits · 0.2g · 100mg"></div>';}).join('');
+    var doses=S.substances.filter(function(x){return a.items[x.id];}).map(function(x){var it=a.items[x.id];return '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><span style="flex:0 0 auto">'+x.emoji+' '+x.name+(it.t?' · <span style="color:#4FB68C">logged '+it.t+'</span>':'')+'</span><input style="flex:1;min-width:0" value="'+esc(it.dose||'')+'" oninput="setAlchDose(\''+x.id+'\',this.value)" placeholder="dose · 2 hits · 0.2g · 100mg"></div>';}).join('');
     host.innerHTML=chips+doses;
   }
   var n=document.getElementById('alchNote');if(n&&document.activeElement!==n)n.value=a.note||'';
