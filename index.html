@@ -293,6 +293,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       <div class="hd-date" id="hdDate">—</div>
       <div class="hd-phase" id="hdPhase">—</div>
     </div>
+    <button onclick="openSettings()" aria-label="Settings" style="margin-left:12px;background:none;border:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:4px;flex:0 0 auto">⚙</button>
   </header>
 
   <!-- ============ TODAY ============ -->
@@ -314,7 +315,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="homeRings">
       <div style="display:flex;gap:16px;align-items:center;justify-content:space-around;flex-wrap:wrap">
         <div class="ring-wrap" style="margin:0" id="todayWaterRing"></div>
         <div class="ring-wrap" style="margin:0" id="todayProteinRing"></div>
@@ -339,7 +340,7 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
       <div id="tpOne"></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="homeAnchors">
       <h3>Today's anchors</h3>
       <div class="sub">The few that matter most right now.</div>
       <div id="todayAnchors"></div>
@@ -348,16 +349,6 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
     <div class="card" id="patternsCard">
       <h3>Patterns <span class="muted tiny">· your data, not your story about it</span></h3>
       <div id="patternsBody"></div>
-    </div>
-
-    <div class="card synccard">
-      <h3>🔥 Carry the Ember home</h3>
-      <div class="note" style="margin-top:2px">Sends everything you've logged to Vesta on your Mac, by AirDrop. Nothing leaves your phone until you tap this, and nothing touches the internet. Do it whenever you're near your Mac.</div>
-      <div style="margin-top:13px;display:flex;gap:10px;flex-wrap:wrap">
-        <button class="act" onclick="carryHome()">Carry the Ember home →</button>
-        <button class="ghost" onclick="downloadSync()">Save file instead</button>
-      </div>
-      <div class="note" id="lastSync"></div>
     </div>
   </div>
 
@@ -542,6 +533,11 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 
 <div class="serv" id="servSheet"><div id="servBody"></div></div>
 <div class="serv" id="drinkSheet"><div id="drinkBody"></div></div>
+
+<div class="sheet" id="settingsSheet">
+  <div class="sheet-h"><div class="st">⚙ Settings</div><div class="sx" onclick="closeSettings()">×</div></div>
+  <div class="sheet-b" id="settingsBody"></div>
+</div>
 <div class="serv" id="reactSheet"><div id="reactBody"></div></div>
 
 <div class="sheet" id="reactReportSheet">
@@ -669,7 +665,7 @@ var defaults={
 };
 var S=Object.assign({},defaults,JSON.parse(localStorage.getItem(EKEY)||'{}'));
 if(!S.favorites||!S.favorites.length)S.favorites=FAV_SEED.slice();
-if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.plates)S.plates=[]; if(!S.weight)S.weight={}; if(!S.cycleLog)S.cycleLog={}; if(!S.alchemyLog)S.alchemyLog={}; if(!S.drinksLog)S.drinksLog={}; if(!S.drinkTypes||!S.drinkTypes.length)S.drinkTypes=[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}]; if(!S.substances||!S.substances.length)S.substances=[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}]; if(!S.protocol)S.protocol={active:false,start:null,end:null,days:{}}; if(!S.usdaKey)S.usdaKey='DEMO_KEY'; if(!S.protocol.days)S.protocol.days={}; Object.keys(S.protocol.days).forEach(function(dk){if(Array.isArray(S.protocol.days[dk])){var o={};S.protocol.days[dk].forEach(function(id){o[id]='';});S.protocol.days[dk]=o;}});
+if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.plates)S.plates=[]; if(!S.weight)S.weight={}; if(!S.homeCards)S.homeCards={rings:true,weight:true,phase:true,anchors:true,patterns:true}; if(!S.cycleLog)S.cycleLog={}; if(!S.alchemyLog)S.alchemyLog={}; if(!S.drinksLog)S.drinksLog={}; if(!S.drinkTypes||!S.drinkTypes.length)S.drinkTypes=[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}]; if(!S.substances||!S.substances.length)S.substances=[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}]; if(!S.protocol)S.protocol={active:false,start:null,end:null,days:{}}; if(!S.usdaKey)S.usdaKey='DEMO_KEY'; if(!S.protocol.days)S.protocol.days={}; Object.keys(S.protocol.days).forEach(function(dk){if(Array.isArray(S.protocol.days[dk])){var o={};S.protocol.days[dk].forEach(function(id){o[id]='';});S.protocol.days[dk]=o;}});
 function persist(){try{localStorage.setItem(EKEY,JSON.stringify(S));}catch(e){}}
 
 /* ============ cycle ============ */
@@ -1044,9 +1040,23 @@ function renderToday(){
     an.push('↩︎ Reviewing '+dateSub(vk)+' — tap the date above to return to today.');
   }
   document.getElementById('todayAnchors').innerHTML=an.map(function(x){return '<div class="logrow">'+x+'</div>';}).join('');
-  document.getElementById('lastSync').textContent=S.lastSync?('Last carried home: '+new Date(S.lastSync).toLocaleString()):'Not carried home yet.';
+  var _ls=document.getElementById('lastSync');if(_ls)_ls.textContent=S.lastSync?('Last carried home: '+new Date(S.lastSync).toLocaleString()):'Not carried home yet.';
   renderWeight();
   renderPatterns();
+  applyHomeCards();
+}
+var HOME_CARDS=[{key:'rings',id:'homeRings',label:'Water & protein rings'},{key:'weight',id:'weightCard',label:'Weight'},{key:'phase',id:'todayPhaseCard',label:'Cycle phase card'},{key:'anchors',id:'homeAnchors',label:'Today’s anchors'},{key:'patterns',id:'patternsCard',label:'Patterns'}];
+function applyHomeCards(){var hc=S.homeCards||{};HOME_CARDS.forEach(function(c){var el=document.getElementById(c.id);if(el)el.style.display=(hc[c.key]===false?'none':'');});}
+function setHomeCard(key,on){if(!S.homeCards)S.homeCards={};S.homeCards[key]=on;persist();applyHomeCards();renderSettings();}
+function openSettings(){renderSettings();showEl('settingsSheet');}
+function closeSettings(){hideEl('settingsSheet');}
+function renderSettings(){var b=document.getElementById('settingsBody');if(!b)return;var hc=S.homeCards||{};var h='';
+  h+='<div class="ksec">Home screen</div><div class="sub">What shows on your Today screen. The Daily Check-in + Ember score always stays.</div>';
+  h+=HOME_CARDS.map(function(c){var on=hc[c.key]!==false;return '<div class="toggle'+(on?' on':'')+'" onclick="setHomeCard(\''+c.key+'\','+(!on)+')"><div class="sw"></div><div>'+c.label+'</div></div>';}).join('');
+  h+='<div class="ksec" style="margin-top:20px">🔥 Carry the Ember home</div><div class="note">Sends everything you\'ve logged to Vesta on your Mac, by AirDrop. Nothing leaves your phone until you tap this, and nothing touches the internet.</div><div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><button class="act" onclick="carryHome()">Carry the Ember home →</button><button class="ghost" onclick="downloadSync()">Save file instead</button></div><div class="note" id="lastSync"></div>';
+  h+='<div class="ksec" style="margin-top:20px">Customize tracking</div><div class="sub">These also live where you use them — this is a shortcut.</div><div class="toolrow" style="flex-wrap:wrap;margin-top:8px"><button class="ghost" onclick="closeSettings();openTrackedSyms()">Symptoms</button><button class="ghost" onclick="closeSettings();openTrackedEvents()">Today-I events</button><button class="ghost" onclick="closeSettings();openAlchManage()">Substances</button><button class="ghost" onclick="closeSettings();openCycleSettings()">Cycle & body</button><button class="ghost" onclick="setUsdaKey()">Food brand key</button></div>';
+  b.innerHTML=h;
+  var ls=document.getElementById('lastSync');if(ls)ls.textContent=S.lastSync?('Last carried home: '+new Date(S.lastSync).toLocaleString()):'Not carried home yet.';
 }
 
 /* ===== WEIGHT (manual) ===== */
@@ -1603,17 +1613,18 @@ function renderCycleLog(){
   h+='<div class="svrow"><div><label class="fl">In bed</label><input type="time" value="'+(cl.sleep.bed||'')+'" onchange="setSleepBed(this.value)"></div><div><label class="fl">Woke up</label><input type="time" value="'+(cl.sleep.wake||'')+'" onchange="setSleepWake(this.value)"></div></div>';
   var hib=hoursInBed(cl.sleep.bed,cl.sleep.wake);h+='<div class="note" id="hibNote" style="margin-top:4px'+(hib==null?';display:none':'')+'">'+(hib!=null?'~'+hib+' h in bed':'')+'</div>';
   h+=sleepSeg(cl.sleep.q);
+  h+='<div style="margin-top:12px"><label class="fl">Weight <span class="muted tiny">· optional · lb</span></label><input type="number" inputmode="decimal" value="'+((S.weight&&S.weight[dk])||'')+'" placeholder="e.g. 147" onchange="setCheckinWeight(this.value)"></div>';
   h+='<div class="ksec">🌙 Evening</div>';
   if(hasCycle())h+='<label class="fl">Flow</label><div class="tags">'+FLOW.map(function(fn,i){return '<button class="'+(cl.flow===i?'on':'')+'" onclick="setFlow('+i+')">'+fn+'</button>';}).join('')+'</div>';
   if(hasCycle()&&(cl.flow||0)>=1){var _isP=isPeriodDay(dk);h+='<div style="margin-top:10px"><label class="fl">Is this your period?</label><div class="tags"><button class="'+(_isP?'on':'')+'" onclick="setPeriod(true)">🩸 Yes — my period</button><button class="'+(!_isP?'on':'')+'" onclick="setPeriod(false)">Just spotting</button></div><div class="note" style="margin-top:4px">'+(_isP?'Counts toward your cycle length + predictions.':'Logged as spotting — won\'t shift your cycle math.')+'</div></div>';}
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><label class="fl" style="margin:0">Symptoms (0–3)</label><span class="cv" style="font-size:13.5px" onclick="openTrackedSyms()">customize</span></div>';
   var _phk=hasCycle()?phaseKeyForDate(dk):null;var _showCyc=(!hasCycle()||_phk==='luteal'||_phk==='menstrual'||_forceShowCyc),_hidCyc=0;
   trackedSyms().forEach(function(id){var sy=symById(id);if(!sy)return;if(sy.cat==='cycle'&&!_showCyc&&cl.sym[id]==null){_hidCyc++;return;}h+=(sy.bin?symToggle(sy,cl.sym[id]):symSeg(sy,cl.sym[id]));});
-  if(_hidCyc)h+='<div class="note" style="margin-top:6px;opacity:.75">🌙 '+_hidCyc+' cycle symptom'+(_hidCyc>1?'s':'')+' surface in your luteal + menstrual window (you\'re in '+(_phk||'')+'). <span class="cv" onclick="setLogDatePhaseShow()">show anyway</span></div>';
+  if(_hidCyc)h+='<div class="note" style="margin-top:6px;opacity:.75">🌙 '+_hidCyc+' cycle symptom'+(_hidCyc>1?'s':'')+' are tucked away — you\'re in '+(_phk||'')+'. Log them anytime to catch something out of the norm.</div><button class="ghost" style="margin-top:6px;padding:9px 13px" onclick="setLogDatePhaseShow()">🌙 Show cycle symptoms</button>';
   h+='<div class="ksec">Exertion · 0–3</div>'+exSeg('p','Physical',cl.exertion.p)+exSeg('m','Mental',cl.exertion.m)+exSeg('e','Emotional',cl.exertion.e)+exSeg('s','Social',cl.exertion.s);
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px"><div class="ksec" style="margin:0">Today I…</div><span class="cv" style="font-size:13.5px" onclick="openTrackedEvents()">customize</span></div><div class="tags">'+trackedEvents().map(function(eid){var ev=eventById(eid);return ev?'<button class="'+(cl.events.indexOf(eid)>=0?'on':'')+'" onclick="toggleEvent(\''+eid+'\')">'+ev.emoji+' '+ev.label+'</button>':'';}).join('')+'</div>';
   trackedEvents().forEach(function(eid){if(!EVENT_DETAIL[eid]||cl.events.indexOf(eid)<0)return;var cfg=EVENT_DETAIL[eid],ev=eventById(eid),cur=(cl.eventDetails&&cl.eventDetails[eid])||'';var hist=eventDetailHistory(eid).filter(function(x){return x!==cur;}).slice(0,6);h+='<div style="margin-top:8px"><label class="fl">'+(ev?ev.emoji+' ':'')+cfg.label+'</label><input id="evd_'+eid+'" value="'+esc(cur)+'" placeholder="'+cfg.ph+'" oninput="setEventDetail(\''+eid+'\',this.value)" autocomplete="off">'+(hist.length?'<div class="tags" style="margin-top:6px">'+hist.map(function(v){return '<button onclick="pickEventDetail(\''+eid+'\',this)">'+esc(v)+'</button>';}).join('')+'</div>':'')+'</div>';});
-  if(S.substances&&S.substances.length){var _al=alchDay(_logDate);h+='<div class="ksec">Substances <span class="muted tiny">· shared with Alchemy</span></div><div class="tags">'+S.substances.map(function(x){var on=!!_al.items[x.id];return '<button class="'+(on?'on':'')+'" onclick="ciToggleSub(\''+x.id+'\')">'+x.emoji+' '+x.name+(on?' ✓':'')+'</button>';}).join('')+'</div>'+S.substances.filter(function(x){return _al.items[x.id];}).map(function(x){var it=_al.items[x.id];return '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><span style="flex:0 0 auto">'+x.emoji+' '+x.name+(it.t?' · '+it.t:'')+'</span><input style="flex:1;min-width:0" value="'+esc(it.dose||'')+'" oninput="ciSetDose(\''+x.id+'\',this.value)" placeholder="dose · 2 hits · 0.2g · 100mg"></div>';}).join('');}
+  {var _al=alchDay(_logDate);h+='<div class="ksec">Substances <span class="muted tiny">· shared with Alchemy</span></div><div class="tags">'+(S.substances||[]).map(function(x){var on=!!_al.items[x.id];return '<button class="'+(on?'on':'')+'" onclick="ciToggleSub(\''+x.id+'\')">'+x.emoji+' '+x.name+(on?' ✓':'')+'</button>';}).join('')+'<button onclick="openAlchManage()">＋ add</button></div>'+(S.substances||[]).filter(function(x){return _al.items[x.id];}).map(function(x){var it=_al.items[x.id];return '<div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><span style="flex:0 0 auto">'+x.emoji+' '+x.name+'</span><input type="time" class="supptime" value="'+suppTo24(it.t)+'" onchange="ciSetTime(\''+x.id+'\',this.value)" title="time taken"><input style="flex:1;min-width:120px" value="'+esc(it.dose||'')+'" oninput="ciSetDose(\''+x.id+'\',this.value)" placeholder="dose · 2 hits · 0.2g · 100mg"></div>';}).join('');}
   if(hasCycle()){
     h+='<div class="ksec">Mood</div><div class="tags">'+MOOD_TAGS.map(function(m){return '<button class="'+(cl.mood.indexOf(m)>=0?'on':'')+'" onclick="toggleMood(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
     h+='<div class="ksec">Sex & drive</div><div class="tags">'+SEX_TAGS.map(function(m){return '<button class="'+(cl.sex.indexOf(m)>=0?'on':'')+'" onclick="toggleSex(\''+m+'\')">'+m+'</button>';}).join('')+'</div>';
@@ -1632,6 +1643,7 @@ function setSleepWake(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};c
 function updateHibNote(){var el=document.getElementById('hibNote');if(!el)return;var cl=cycleLogFor(_logDate);var hib=hoursInBed(cl.sleep&&cl.sleep.bed,cl.sleep&&cl.sleep.wake);if(hib!=null){el.textContent='~'+hib+' h in bed';el.style.display='';}else{el.textContent='';el.style.display='none';}}
 function hoursInBed(bed,wake){if(!bed||!wake)return null;function mn(t){var pp=t.split(':');return (+pp[0])*60+(+pp[1]);}var d=((mn(wake)-mn(bed))%1440+1440)%1440;if(d>14*60)d-=12*60;/* >14h in bed is almost always an AM/PM slip on the bed time — correct the derived hours (stored times unchanged) */return Math.round(d/60*10)/10;}
 function setSleepQ(v){var cl=cycleLogFor(_logDate);if(!cl.sleep)cl.sleep={};cl.sleep.q=v;persist();renderCycleLog();}
+function setCheckinWeight(v){var n=parseFloat(v);if(!S.weight)S.weight={};if(v===''||isNaN(n)||n<=0){delete S.weight[_logDate];}else{S.weight[_logDate]=r1(n);}persist();renderWeight();}
 function setExertion(k,v){var cl=cycleLogFor(_logDate);if(!cl.exertion)cl.exertion={};cl.exertion[k]=v;persist();renderCycleLog();}
 function toggleEvent(id){var cl=cycleLogFor(_logDate);if(!cl.events)cl.events=[];var i=cl.events.indexOf(id);if(i>=0)cl.events.splice(i,1);else cl.events.push(id);persist();renderCycleLog();}
 function setEventDetail(id,v){var cl=cycleLogFor(_logDate);if(!cl.eventDetails)cl.eventDetails={};if(v)cl.eventDetails[id]=v;else delete cl.eventDetails[id];persist();}
@@ -1828,7 +1840,7 @@ function addCount(){
 function syncPayload(){
   return {_ember:true,version:1,exportedAt:new Date().toISOString(),
     lastPeriodStart:S.lastPeriodStart,cycleLength:S.cycleLength,cycleUpdatedAt:S.cycleUpdatedAt,
-    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,plates:S.plates,weight:S.weight,cycleLog:S.cycleLog,trackedSyms:S.trackedSyms,trackedEvents:S.trackedEvents,customEvents:S.customEvents,usdaKey:S.usdaKey,drinksLog:S.drinksLog,drinkTypes:S.drinkTypes,alchemyLog:S.alchemyLog,substances:S.substances,protocol:S.protocol,symptoms:S.symptoms,supps:S.supps,
+    hydration:S.hydration,meals:S.meals,diary:S.diary,customFoods:S.customFoods,recipes:S.recipes,plates:S.plates,weight:S.weight,homeCards:S.homeCards,cycleLog:S.cycleLog,trackedSyms:S.trackedSyms,trackedEvents:S.trackedEvents,customEvents:S.customEvents,usdaKey:S.usdaKey,drinksLog:S.drinksLog,drinkTypes:S.drinkTypes,alchemyLog:S.alchemyLog,substances:S.substances,protocol:S.protocol,symptoms:S.symptoms,supps:S.supps,
     counts:S.counts,rites:S.rites,favorites:S.favorites};
 }
 function syncBlob(){return new Blob([JSON.stringify(syncPayload(),null,0)],{type:'application/json'});}
@@ -1863,6 +1875,9 @@ function setAlchDose(id,v){setAlchDoseFor(todayKey(),id,v);}
 function setAlchNote(v){alchDay(todayKey()).note=v;persist();}
 function ciToggleSub(id){toggleAlchFor(_logDate,id);renderCycleLog();}
 function ciSetDose(id,v){setAlchDoseFor(_logDate,id,v);}
+function setAlchTimeFor(dk,id,v){var a=alchDay(dk);if(a.items[id])a.items[id].t=(v?suppFrom24(v):'');persist();}
+function setAlchTime(id,v){setAlchTimeFor(todayKey(),id,v);}
+function ciSetTime(id,v){setAlchTimeFor(_logDate,id,v);}
 function protoDosesToday(){var pr=S.protocol;if(!pr||!pr.active)return {};var t=todayKey();if(pr.start&&t<pr.start)return {};if(pr.end&&t>pr.end)return {};return (pr.days&&pr.days[t])||{};}
 function protocolAdherence(){var pr=S.protocol;if(!pr||!pr.active||!pr.start)return null;var end=(pr.end&&pr.end<todayKey())?pr.end:todayKey();var list=[],d=pr.start;var guard=0;while(d<=end&&guard<400){list.push(d);d=shiftDateKey(d,1);guard++;}var adhered=0,streak=0;function sig(dk){var sched=Object.keys((pr.days[dk]||{})).sort().join(',');var act=Object.keys(((S.alchemyLog[dk]||{}).items)||{}).sort().join(',');return sched===act;}list.forEach(function(dk){if(sig(dk))adhered++;});for(var i=list.length-1;i>=0;i--){if(sig(list[i]))streak++;else break;}return {adhered:adhered,total:list.length,streak:streak};}
 function renderAlchemy(){
@@ -1876,7 +1891,7 @@ function renderAlchemy(){
   if(!(S.substances&&S.substances.length)){host.innerHTML='<div class="note">No substances yet. Tap ＋ Substances.</div>';}
   else{
     var chips='<div class="tags">'+S.substances.map(function(x){var done=!!a.items[x.id],isS=sched&&sched.indexOf(x.id)>=0;return '<button class="'+(done?'on':'')+'" onclick="toggleAlch(\''+x.id+'\')">'+x.emoji+' '+x.name+(done?' ✓':(isS?' ·due':''))+'</button>';}).join('')+'</div>';
-    var doses=S.substances.filter(function(x){return a.items[x.id];}).map(function(x){var it=a.items[x.id];return '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><span style="flex:0 0 auto">'+x.emoji+' '+x.name+(it.t?' · <span style="color:#4FB68C">logged '+it.t+'</span>':'')+'</span><input style="flex:1;min-width:0" value="'+esc(it.dose||'')+'" oninput="setAlchDose(\''+x.id+'\',this.value)" placeholder="dose · 2 hits · 0.2g · 100mg"></div>';}).join('');
+    var doses=S.substances.filter(function(x){return a.items[x.id];}).map(function(x){var it=a.items[x.id];return '<div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><span style="flex:0 0 auto">'+x.emoji+' '+x.name+'</span><input type="time" class="supptime" value="'+suppTo24(it.t)+'" onchange="setAlchTime(\''+x.id+'\',this.value)" title="time taken — edit to when you actually took it"><input style="flex:1;min-width:120px" value="'+esc(it.dose||'')+'" oninput="setAlchDose(\''+x.id+'\',this.value)" placeholder="dose · 2 hits · 0.2g · 100mg"></div>';}).join('');
     host.innerHTML=chips+doses;
   }
   var n=document.getElementById('alchNote');if(n&&document.activeElement!==n)n.value=a.note||'';
@@ -1918,7 +1933,7 @@ function toggleProtoDaySub(dk){if(!_protoBrush)return;var pr=S.protocol;if(!pr.d
 function toggleProtoActive(){S.protocol.active=!S.protocol.active;persist();renderProtocol();}
 /* manage substances */
 function openAlchManage(){renderAlchManage();showEl('alchManageSheet');}
-function closeAlchManage(){hideEl('alchManageSheet');renderAlchemy();}
+function closeAlchManage(){hideEl('alchManageSheet');renderAlchemy();var cs=document.getElementById('cycleLogSheet');if(cs&&cs.classList.contains('open'))renderCycleLog();}
 function renderAlchManage(){var b=document.getElementById('alchManageBody');
   var h='<div class="sub">Your substances — add anything you want to track.</div>';
   h+=(S.substances||[]).map(function(x){return '<div class="entry"><div class="ei"><div class="en">'+x.emoji+' '+x.name+'</div></div><div class="x" onclick="removeSub(\''+x.id+'\')">×</div></div>';}).join('');
