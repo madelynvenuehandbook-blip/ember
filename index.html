@@ -281,6 +281,15 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
 .mealpick button.on{background:var(--candle);color:#1a1206;border-color:var(--candle);font-weight:600}
 .backdrop{position:fixed;inset:0;z-index:125;background:rgba(4,5,12,.55);display:none}
 .backdrop.open{display:block}
+.h-pills{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--moonlight);margin-bottom:12px}
+.h-pills b{color:var(--candle);font-weight:600;letter-spacing:.02em}
+.h-card{border-top:1px solid var(--line);padding:12px 0}
+.h-card:first-of-type{border-top:none;padding-top:2px}
+.h-l{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--candle);margin-bottom:5px}
+.h-t{color:var(--cream);font-size:14.5px;line-height:1.5}
+.h-a{font-size:12.5px;color:var(--muted);margin-top:4px;font-style:italic}
+.h-w{font-family:var(--temple);color:var(--moon);font-size:16px;margin-right:4px}
+.h-moon{font-size:12.5px;color:var(--moonlight);margin:2px 0 6px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -313,6 +322,11 @@ hr.d{border:none;border-top:1px solid var(--line);margin:14px 0}
         <div><h3 style="margin:0">Daily Check-In</h3><div class="sub" style="margin:3px 0 0" id="todayCheckinSub">tap to check in</div></div>
         <div id="todayFlame" style="text-align:center;flex:0 0 auto"></div>
       </div>
+    </div>
+
+    <div class="card" id="hearthCard">
+      <h3>🔥 The Hearth <span class="muted tiny">· your daily, mirrored from Vesta</span></h3>
+      <div id="hearthMorning"></div>
     </div>
 
     <div class="card" id="homeRings">
@@ -665,7 +679,7 @@ var defaults={
 };
 var S=Object.assign({},defaults,JSON.parse(localStorage.getItem(EKEY)||'{}'));
 if(!S.favorites||!S.favorites.length)S.favorites=FAV_SEED.slice();
-if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.plates)S.plates=[]; if(!S.weight)S.weight={}; if(!S.homeCards)S.homeCards={rings:true,weight:true,phase:true,anchors:true,patterns:true}; if(!S.cycleLog)S.cycleLog={}; if(!S.alchemyLog)S.alchemyLog={}; if(!S.drinksLog)S.drinksLog={}; if(!S.drinkTypes||!S.drinkTypes.length)S.drinkTypes=[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}]; if(!S.substances||!S.substances.length)S.substances=[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}]; if(!S.protocol)S.protocol={active:false,start:null,end:null,days:{}}; if(!S.usdaKey)S.usdaKey='DEMO_KEY'; if(!S.protocol.days)S.protocol.days={}; Object.keys(S.protocol.days).forEach(function(dk){if(Array.isArray(S.protocol.days[dk])){var o={};S.protocol.days[dk].forEach(function(id){o[id]='';});S.protocol.days[dk]=o;}});
+if(!S.diary)S.diary={}; if(!S.customFoods)S.customFoods=[]; if(!S.recipes)S.recipes=[]; if(!S.plates)S.plates=[]; if(!S.weight)S.weight={}; if(!S.homeCards)S.homeCards={hearth:true,rings:true,weight:true,phase:true,anchors:true,patterns:true}; if(S.homeCards&&S.homeCards.hearth===undefined)S.homeCards.hearth=true; if(!S.cycleLog)S.cycleLog={}; if(!S.alchemyLog)S.alchemyLog={}; if(!S.drinksLog)S.drinksLog={}; if(!S.drinkTypes||!S.drinkTypes.length)S.drinkTypes=[{id:'coffee',name:'Coffee',emoji:'☕',caf:95},{id:'espresso',name:'Espresso',emoji:'☕',caf:64},{id:'blacktea',name:'Black tea',emoji:'🫖',caf:47},{id:'greentea',name:'Green tea',emoji:'🍵',caf:28},{id:'matcha',name:'Matcha',emoji:'🍵',caf:70},{id:'chai',name:'Chai',emoji:'🫖',caf:50},{id:'herbal',name:'Herbal tea',emoji:'🌿',caf:0},{id:'rrl',name:'Red raspberry tea',emoji:'🌿',caf:0},{id:'milk',name:'Milk',emoji:'🥛',caf:0}]; if(!S.substances||!S.substances.length)S.substances=[{id:'psilo',name:'Psilocybin',emoji:'🍄'},{id:'cannabis',name:'Cannabis',emoji:'🌿'}]; if(!S.protocol)S.protocol={active:false,start:null,end:null,days:{}}; if(!S.usdaKey)S.usdaKey='DEMO_KEY'; if(!S.protocol.days)S.protocol.days={}; Object.keys(S.protocol.days).forEach(function(dk){if(Array.isArray(S.protocol.days[dk])){var o={};S.protocol.days[dk].forEach(function(id){o[id]='';});S.protocol.days[dk]=o;}});
 function persist(){try{localStorage.setItem(EKEY,JSON.stringify(S));}catch(e){}}
 
 /* ============ cycle ============ */
@@ -1043,13 +1057,106 @@ function renderToday(){
   var _ls=document.getElementById('lastSync');if(_ls)_ls.textContent=S.lastSync?('Last carried home: '+new Date(S.lastSync).toLocaleString()):'Not carried home yet.';
   renderWeight();
   renderPatterns();
+  renderHearth();
   applyHomeCards();
 }
-var HOME_CARDS=[{key:'rings',id:'homeRings',label:'Water & protein rings'},{key:'weight',id:'weightCard',label:'Weight'},{key:'phase',id:'todayPhaseCard',label:'Cycle phase card'},{key:'anchors',id:'homeAnchors',label:'Today’s anchors'},{key:'patterns',id:'patternsCard',label:'Patterns'}];
+var HOME_CARDS=[{key:'hearth',id:'hearthCard',label:'The Hearth (daily ritual)'},{key:'rings',id:'homeRings',label:'Water & protein rings'},{key:'weight',id:'weightCard',label:'Weight'},{key:'phase',id:'todayPhaseCard',label:'Cycle phase card'},{key:'anchors',id:'homeAnchors',label:'Today’s anchors'},{key:'patterns',id:'patternsCard',label:'Patterns'}];
 function applyHomeCards(){var hc=S.homeCards||{};HOME_CARDS.forEach(function(c){var el=document.getElementById(c.id);if(el)el.style.display=(hc[c.key]===false?'none':'');});}
 function setHomeCard(key,on){if(!S.homeCards)S.homeCards={};S.homeCards[key]=on;persist();applyHomeCards();renderSettings();}
 function openSettings(){renderSettings();showEl('settingsSheet');}
 function closeSettings(){hideEl('settingsSheet');}
+/* ===== THE HEARTH — daily ritual mirrored from Vesta. Deterministic by day-of-year, so it matches Vesta exactly. ===== */
+var HEARTH_HORO=[
+ "The water you are made of does not push the river, it becomes it. Stop forcing today. Flow at it instead.",
+ "Your intuition is not a mood, it is data. The thing you already know but keep talking yourself out of is the answer.",
+ "Pisces feels everyone's weather. Today, check which feelings are actually yours before you carry them around.",
+ "You dream in worlds other people cannot see yet. Write one of them down before the day eats it.",
+ "Boundaries are not unkind. Water with no banks floods the people it loves. Hold your shape today.",
+ "You refill in the quiet, near water, away from the noise. Steal twenty minutes of it before anyone needs you.",
+ "Not everything that drains you is a problem to solve. Some of it is just yours to set down. Set something down today.",
+ "The fish swims two directions at once. Your indecision is you feeling all the angles, not weakness. Pick one and move.",
+ "You are a soft thing with a steel spine. People mistake the soft for the whole story. Let them underestimate you today.",
+ "Your compassion is a superpower with no off switch. Aim some of it at yourself this morning.",
+ "Creativity comes to you sideways, on walks, in water, half asleep. Leave a door open for it instead of chasing it.",
+ "The thing you are avoiding is smaller than the dread of it. Name it and watch it shrink.",
+ "You do not have to earn rest. The tide goes out without apologizing. So can you.",
+ "An old feeling might visit today. Let it in, give it tea, do not let it move back in.",
+ "You see the best in people, sometimes before they have earned it. Trust the read, verify the person.",
+ "Your sensitivity is the antenna that built everything you are making. Protect the signal, lower the noise.",
+ "Two Pisces moods: drowning and floating, same water. The difference today is just your breath.",
+ "You are allowed to want the enormous thing. Wanting it is not arrogance, it is direction.",
+ "The dream is not too big. Your timeline for it is just kinder than the world's. Keep your timeline.",
+ "Someone in your orbit needs your softness today, someone else needs your no. Know which is which.",
+ "You came here to feel it all and make something out of the feeling. That is the whole assignment. Carry on."
+];
+var HEARTH_STOIC=[
+ {q:"You have power over your mind, not outside events. Realize this, and you will find strength.",a:"Marcus Aurelius"},
+ {q:"We suffer more often in imagination than in reality.",a:"Seneca"},
+ {q:"It is not what happens to you, but how you react to it that matters.",a:"Epictetus"},
+ {q:"Waste no more time arguing about what a good person should be. Be one.",a:"Marcus Aurelius"},
+ {q:"The happiness of your life depends upon the quality of your thoughts.",a:"Marcus Aurelius"},
+ {q:"No one is free who is not master of themselves.",a:"Epictetus"},
+ {q:"Difficulties strengthen the mind, as labor does the body.",a:"Seneca"},
+ {q:"Begin at once to live, and count each separate day as a separate life.",a:"Seneca"},
+ {q:"Confine yourself to the present.",a:"Marcus Aurelius"},
+ {q:"Sometimes even to live is an act of courage.",a:"Seneca"},
+ {q:"First say to yourself what you would be, and then do what you have to do.",a:"Epictetus"},
+ {q:"If it is not right, do not do it. If it is not true, do not say it.",a:"Marcus Aurelius"},
+ {q:"He suffers more than necessary who suffers before it is necessary.",a:"Seneca"},
+ {q:"Wealth consists not in having great possessions, but in having few wants.",a:"Epictetus"},
+ {q:"The soul becomes dyed with the color of its thoughts.",a:"Marcus Aurelius"},
+ {q:"Luck is what happens when preparation meets opportunity.",a:"Seneca"},
+ {q:"Very little is needed to make a happy life; it is all within yourself, in your way of thinking.",a:"Marcus Aurelius"},
+ {q:"How long are you going to wait before you demand the best for yourself?",a:"Epictetus"},
+ {q:"The best revenge is not to be like your enemy.",a:"Marcus Aurelius"},
+ {q:"He who is brave is free.",a:"Seneca"},
+ {q:"Don't explain your philosophy. Embody it.",a:"Epictetus"}
+];
+var HEARTH_WORDS=[
+ {w:"Meraki",m:"(Greek) To do something with your whole soul, with love and creativity, to leave a piece of yourself in the work."},
+ {w:"Sonder",m:"The realization that every stranger is living a life as vivid and complex as your own."},
+ {w:"Sisu",m:"(Finnish) Quiet, stubborn courage in the face of what looks impossible."},
+ {w:"Querencia",m:"(Spanish) The place where you feel safe and most yourself, the ground you draw your strength from."},
+ {w:"Eudaimonia",m:"(Greek) Flourishing. The good life, lived in line with your values."},
+ {w:"Apricity",m:"The warmth of the sun on a cold day."},
+ {w:"Ataraxia",m:"(Greek) A clear, deep, untroubled calm."},
+ {w:"Kintsugi",m:"(Japanese) Mending what broke with gold, so the cracks become the most beautiful part."},
+ {w:"Telos",m:"(Greek) The end a thing grows toward, its deepest purpose."},
+ {w:"Wabi-sabi",m:"(Japanese) The beauty in things imperfect, impermanent, and unfinished."},
+ {w:"Fernweh",m:"(German) An ache for far-off places, a homesickness for somewhere you have never been."},
+ {w:"Numinous",m:"The feeling of awe in the presence of something vast and sacred."},
+ {w:"Arete",m:"(Greek) Excellence. Becoming the fullest version of what you are capable of."},
+ {w:"Saudade",m:"(Portuguese) A tender longing for something absent, sweet and sad at once."},
+ {w:"Solivagant",m:"One who wanders alone, and likes it."},
+ {w:"Vorfreude",m:"(German) The joy of looking forward to something."},
+ {w:"Eunoia",m:"(Greek) Beautiful thinking. A well, healthy mind."},
+ {w:"Lagom",m:"(Swedish) Not too much, not too little. Exactly enough."},
+ {w:"Ikigai",m:"(Japanese) Your reason for waking up, the thing worth getting up for."},
+ {w:"Mono no aware",m:"(Japanese) The gentle ache of knowing nothing lasts, and loving it anyway."},
+ {w:"Sprezzatura",m:"(Italian) Making something hard look effortless and graceful."}
+];
+var HEARTH_SIGN_LONG={Aries:0,Taurus:30,Gemini:60,Cancer:90,Leo:120,Virgo:150,Libra:180,Scorpio:210,Sagittarius:240,Capricorn:270,Aquarius:300,Pisces:330};
+var HEARTH_CHART={Sun:{sign:'Pisces',deg:25.6},Moon:{sign:'Pisces',deg:10.9}};
+function hChartLon(p){return HEARTH_SIGN_LONG[p.sign]+p.deg;}
+function hDoy(d){return Math.floor((d-new Date(d.getFullYear(),0,0))/86400000);}
+function hTransitMoon(date){var jd=date.getTime()/86400000+2440587.5;var T=(jd-2451545.0)/36525;var D2R=Math.PI/180;var L=(218.3164591+481267.88134236*T)%360;var M=(357.5291092+35999.0502909*T)%360;var Mp=(134.9634114+477198.8676313*T)%360;var D=(297.8502042+445267.1115168*T)%360;var lambda=L+6.289*Math.sin(Mp*D2R)-1.274*Math.sin((2*D-Mp)*D2R)+0.658*Math.sin(2*D*D2R)-0.186*Math.sin(M*D2R)-0.059*Math.sin((2*Mp-2*D)*D2R);lambda=((lambda%360)+360)%360;var signs=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];return {longitude:lambda,sign:signs[Math.floor(lambda/30)],deg:lambda%30};}
+function hAspect(angle){var a=Math.abs(angle),orb=6;if(Math.abs(a-0)<orb||Math.abs(a-360)<orb)return {n:'conjunction',q:'amplifies'};if(Math.abs(a-60)<orb)return {n:'sextile',q:'a soft opening'};if(Math.abs(a-90)<orb)return {n:'square',q:'friction, forward push'};if(Math.abs(a-120)<orb)return {n:'trine',q:'flow, ease'};if(Math.abs(a-180)<orb)return {n:'opposition',q:'a mirror, a pull'};return null;}
+function hHouseTheme(h){return ['self, body, how you show up','money, values, what you own','siblings, daily mind, short trips, learning','home, mother, roots, foundation','creativity, play, romance, your fire','health, work, daily routines','partnership, the close other','shared resources, intimacy, transformation','belief, expansion, philosophy, travel','career, public life, vocation','community, friends, long-term vision','rest, the unseen, the inner world'][h-1];}
+function hMoonRead(date){var t=hTransitMoon(date);var sunLong=hChartLon(HEARTH_CHART.Sun),moonLong=hChartLon(HEARTH_CHART.Moon);var diff=(t.longitude-sunLong+540)%360-180;var asp=hAspect(diff);var target='Sun',diffM=(t.longitude-moonLong+540)%360-180,aspM=hAspect(diffM);if(aspM&&(!asp||Math.abs(aspM.n.length-Math.abs(diffM))<Math.abs(asp.n.length-Math.abs(diff)))){asp=aspM;target='Moon';}var houseStarts=[92.7,111.9,132.3,157.5,191.5,233.8,272.7,291.9,312.3,337.5,11.5,53.8];var h=12;for(var i=0;i<12;i++){var a=houseStarts[i],b=houseStarts[(i+1)%12];if(a<b){if(t.longitude>=a&&t.longitude<b){h=i+1;break;}}else{if(t.longitude>=a||t.longitude<b){h=i+1;break;}}}return {moon:t,aspect:asp,target:target,house:h};}
+function renderHearth(){var host=document.getElementById('hearthMorning');if(!host)return;
+  var vk=viewKey(),isTd=(vk===todayKey());var d=isTd?new Date():new Date(vk+'T12:00:00');var n=hDoy(d);
+  var seed=HEARTH_HORO[((n%HEARTH_HORO.length)+HEARTH_HORO.length)%HEARTH_HORO.length];
+  var s=HEARTH_STOIC[(((n+7)%HEARTH_STOIC.length)+HEARTH_STOIC.length)%HEARTH_STOIC.length];
+  var w=HEARTH_WORDS[(((n+13)%HEARTH_WORDS.length)+HEARTH_WORDS.length)%HEARTH_WORDS.length];
+  var realLine='';try{var tm=hMoonRead(d);var ord=(tm.house===1?'st':tm.house===2?'nd':tm.house===3?'rd':'th');var aspText=tm.aspect?('<b>'+tm.moon.sign+' Moon in '+tm.aspect.n+' to your natal '+tm.target+'</b>, '+tm.aspect.q+'.'):('<b>The Moon moves through '+tm.moon.sign+'</b>, your <b>'+tm.house+ord+' house</b>, '+hHouseTheme(tm.house)+'.');realLine='<div class="h-moon">🌙 '+aspText+'</div>';}catch(e){}
+  var pills='<div class="h-pills"><span><b>Today</b> '+d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})+'</span>';
+  try{if(hasCycle()){var ci=cycleInfoForDate(vk);pills+='<span><b>Cycle</b> Day '+ci.day+' · '+ci.phase.name+'</span>';var start=new Date((S.lastPeriodStart||todayKey())+'T00:00:00'),len=S.cycleLength||29,t0=new Date();t0.setHours(0,0,0,0);var nx=new Date(start),g=0;while(nx<=t0&&g<400){nx.setDate(nx.getDate()+len);g++;}var dtp=Math.round((nx-t0)/86400000);pills+='<span><b>Next bleed</b> '+nx.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' · in '+dtp+'d</span>';}}catch(e){}
+  pills+='</div>';
+  host.innerHTML=pills+
+    '<div class="h-card"><div class="h-l">Today, Pisces</div>'+realLine+'<div class="h-t">'+seed+'</div></div>'+
+    '<div class="h-card"><div class="h-l">From the Stoics</div><div class="h-t">'+s.q+'</div><div class="h-a">'+s.a+'</div></div>'+
+    '<div class="h-card"><div class="h-l">Word of the Day</div><div class="h-t"><span class="h-w">'+w.w+'</span> '+w.m+'</div></div>';
+}
 function renderSettings(){var b=document.getElementById('settingsBody');if(!b)return;var hc=S.homeCards||{};var h='';
   h+='<div class="ksec">Home screen</div><div class="sub">What shows on your Today screen. The Daily Check-in + Ember score always stays.</div>';
   h+=HOME_CARDS.map(function(c){var on=hc[c.key]!==false;return '<div class="toggle'+(on?' on':'')+'" onclick="setHomeCard(\''+c.key+'\','+(!on)+')"><div class="sw"></div><div>'+c.label+'</div></div>';}).join('');
