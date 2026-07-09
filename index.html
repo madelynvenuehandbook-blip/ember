@@ -748,29 +748,32 @@ function waterGoal(){
 function suppSchedule(){
   var ci=cycleInfo();var ph=ci.phase.key;
   var base=[
-   {id:'unithroid',when:'On waking',name:'Unithroid 100mcg',nt:'Empty stomach, plain water. Wait 30–60 min before food, coffee, electrolytes or any other supplement.'},
-   {id:'buoy_am',when:'On waking',name:'Buoy drops + lemon-turmeric shot',nt:'Fine on waking. If Buoy has magnesium, push 30+ min after Unithroid.'},
-   {id:'d3',when:'Breakfast',name:'Vitamin D3 + K2',nt:'With the fattiest meal — fat-soluble.'},
-   {id:'omega_am',when:'Breakfast',name:'Omega-3 (Carlson) — dose 1',nt:'With food.'},
-   {id:'creatine',when:'Breakfast',name:'Creatine 5g',nt:'Consistency > timing. Your muscle-build anchor.'},
-   {id:'peptides',when:'Mid-morning',name:'KPV + BPC-157 (sublingual)',nt:'Empty, hold under tongue. Gut + mast-cell layer.'},
-   {id:'omega_pm',when:'Lunch',name:'Omega-3 (Carlson) — dose 2',nt:'With food.'},
-   {id:'selenium',when:'Lunch',name:'Selenium 200mcg (or 2–3 Brazil nuts)',nt:'The TPO-antibody lever. Don\'t exceed 400mcg/day total.'},
-   {id:'nac',when:'After lunch',name:'NAC 600–1,200mg',nt:'Glutathione + thyroid + histamine support.'},
-   {id:'coq10',when:'After lunch',name:'Ubiquinol (CoQ10) 200–300mg',nt:'With fat. Energy + mito.'},
-   {id:'alcar',when:'Afternoon',name:'Acetyl-L-carnitine 500–1,000mg',nt:'For the brain fog.'},
-   {id:'mag',when:'Evening',name:'Magnesium malate 400mg',nt:'With food. Evening — it blocks Unithroid in the morning.'},
-   {id:'glutamine',when:'Bedtime',name:'L-glutamine 2g',nt:'Empty. Gut-barrier repair.'}
+   {id:'unithroid',when:'On waking',name:'Unithroid 100mcg',nt:'6:30 AM · empty stomach, plain water, ALONE. Nothing else — not even electrolytes — for 1 hour.'},
+   {id:'buoy_am',when:'Empty · 7:30',name:'Buoy drops + lemon-turmeric shot',nt:'Empty, kept 1 hr from Unithroid (it has trace Ca/Mg + B-vitamins).'},
+   {id:'alcar',when:'Empty · 7:30',name:'Acetyl-L-carnitine 500mg',nt:'1 cap, empty stomach — absorbs best fasting. For the brain fog.'},
+   {id:'glutamine',when:'Empty · 7:30',name:'L-glutamine 2g',nt:'2 caps, empty. Off your thyroid med now — gut-barrier repair.'},
+   {id:'coq10',when:'Breakfast',name:'Ubiquinol (CoQ10) 100mg',nt:'With fat — fat-soluble. Energy + mito.'},
+   {id:'omega_am',when:'Breakfast',name:'Omega-3 (Carlson) — 1 of 2',nt:'1 softgel with food (EPA 300 / DHA 200).'},
+   {id:'d3',when:'Breakfast',name:'Vitamin D3 4,000 IU',nt:'2 softgels with fat. Upped from 2,000 — level was 32. Retest in 3 mo.'},
+   {id:'creatine',when:'Breakfast',name:'Creatine 5g',nt:'With food. Consistency > timing — your muscle-build anchor.'},
+   {id:'omega_pm',when:'Lunch',name:'Omega-3 (Carlson) — 2 of 2',nt:'1 softgel with food.'},
+   {id:'nac',when:'Lunch',name:'NAC 1,000mg',nt:'With/after food. Glutathione + thyroid + histamine.'},
+   {id:'creatine_low',when:'Afternoon',name:'Creatine — extra ½ (2.5g)',nt:'~2:30 PM · only on low-energy days.'},
+   {id:'fiber',when:'Afternoon',name:'Fiber (phasing out)',nt:'~4 PM every other day, big glass of water. Keep ~2 hrs from other pills. Tapering as diet fiber rises.'},
+   {id:'mag',when:'Dinner',name:'Magnesium malate 400mg',nt:'2 tablets with dinner — ~4 hrs from Unithroid.'}
   ];
-  // cycle-timed additions
+  // twice-weekly methylfolate — Tuesdays & Sundays only
+  var dow=new Date().getDay();
+  if(dow===2||dow===0)base.splice(8,0,{id:'methylfolate',when:'Breakfast',name:'Methylfolate 1,000mcg',nt:'2×/week — Tuesdays & Sundays (slow COMT). With food. Titrate up only if well tolerated.'});
+  // cycle-timed additions (layered on the base, from your Cycle-Phase tab)
   if(ph==='ovulation'){
-    base.push({id:'querc_ov',when:'Afternoon',name:'Quercetin',nt:'Daily through ovulation.',phase:true});
-    base.push({id:'vitc_ov',when:'Afternoon',name:'Vitamin C 1,000mg',nt:'Histamine support at your estrogen peak.',phase:true});
+    base.push({id:'querc_ov',when:'Lunch · cycle',name:'Quercetin 500mg',nt:'Daily through ovulation — with omega-3 (the fat boosts absorption).',phase:true});
+    base.push({id:'vitc_ov',when:'Afternoon · cycle',name:'Vitamin C 1,000mg',nt:'Histamine support at your estrogen peak.',phase:true});
     base.push({id:'dao_ov',when:'Before meals',name:'DAO',nt:'Before any high-histamine meal this week.',phase:true,hist:true});
   } else if(ph==='luteal' && ci.day>=ci.len-6){
-    base.push({id:'querc_lut',when:'Afternoon',name:'Quercetin',nt:'Begin/continue as you approach your period (the cheek-flare window).',phase:true});
+    base.push({id:'querc_lut',when:'Lunch · cycle',name:'Quercetin 500mg',nt:'Begin/continue as you approach your period (the cheek-flare window).',phase:true});
   } else if(ph==='menstrual'){
-    base.push({id:'iron_food',when:'Meals',name:'Iron-rich foods / bone broth',nt:'You lose iron with the bleed — beef, cooked greens, broth.',phase:true});
+    base.push({id:'iron_food',when:'Meals · cycle',name:'Iron-rich foods + vitamin C',nt:'You lose iron with the bleed — beef, lentils, pumpkin seeds, spinach; vitamin C boosts absorption. Fresh-cooked to keep histamine low.',phase:true});
   }
   return base;
 }
